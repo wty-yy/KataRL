@@ -35,12 +35,12 @@ A testing framework for reinforcement learning, available models includes:
   绘制相同智能体和环境下多次重启的训练曲线图。（带95%置信区间）
 
   ```shell
-  # logs_path="train-logs/DQN-logs" (-p), model_names=["DQN-1","DQN-2","DQN-3","DQN-4"] (-m)
+  # logs_path="train-logs/DQN-logs" (-p), model_names=["DQN-1","DQN-2","DQN-6","DQN-16"] (-m)
   # plot alpha=0.5 (-a), dpi=300 (-dpi)
-  python plot_merge.py -p "train-logs/DQN-logs" -m "DQN-1" "DQN-2" "DQN-3" "DQN-4" -a 0.5 -dpi 300
+  python plot_merge.py -p "train-logs/DQN-logs" -m "DQN-1" "DQN-2" "DQN-6" "DQN-16" -a 0.5 -dpi 300
   ```
 
-  ![DQN](archives/DQN-figures/DQN_batch_1_2_3_4.png)
+  ![DQN](archives/DQN-figures/DQN_batch_1_2_6_16.png)
 
   
 
