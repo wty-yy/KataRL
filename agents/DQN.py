@@ -61,7 +61,7 @@ class MemoryCache:
         T(terminal)    |  (1,)              |  bool
     """
 
-    def __init__(self, state_shape, action_shape):
+    def __init__(self, state_shape, action_shape, memory_size):
         self.state_shape, self.action_shape = state_shape, action_shape
         self.count = 0
         self.total = memory_size
@@ -89,7 +89,11 @@ class DQN(Agent):
             self, env:Env=None, verbose=False,
             agent_name='DQN', agent_id=0,
             model_name='MLP', load_id=None,
-            episodes=100, **kwargs
+            episodes=100,
+            batch_size=batch_size,  # constant.DQN
+            memory_size=memory_size,  # constant.DQN
+            start_fit_size=start_fit_size,  # constant.DQN
+            **kwargs
         ):
         super().__init__(env, verbose, agent_name, agent_id, model_name, load_id, episodes, **kwargs)
         self.model = build_model(model_name, self.env.state_shape, load_id=load_id)
@@ -97,7 +101,9 @@ class DQN(Agent):
         self.loss_fn = keras.losses.MeanSquaredError()
         self.logs = Logs()
         self.epsilon = epsilon_max
-        self.memory = MemoryCache(env.state_shape, env.action_shape)
+        self.batch_size, self.memory_size, self.start_fit_size = \
+            batch_size, memory_size, start_fit_size
+        self.memory = MemoryCache(env.state_shape, env.action_shape, self.memory_size)
     
     def train(self):
         for episode in tqdm(range(self.episodes)):
@@ -147,8 +153,8 @@ class DQN(Agent):
         return loss, tf.reduce_mean(q_state)
 
     def fit(self):
-        if self.memory.count < start_fit_size: return None, None
-        s, a, r, s_, t = self.memory.sample(batch_size)
+        if self.memory.count < self.start_fit_size: return None, None
+        s, a, r, s_, t = self.memory.sample(self.batch_size)
         r, t = r.squeeze(), t.squeeze()
         a_onehot = make_onehot(a, depth=2).astype('bool')
 

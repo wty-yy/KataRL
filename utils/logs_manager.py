@@ -50,6 +50,7 @@ class LogsManager:
             model_names=None, 
             to_file=None, 
             merge_data=False,
+            dpi=100,
             **kwargs
         ):
         if data_names is None: data_names = self.name_collection.names['data']
@@ -65,32 +66,33 @@ class LogsManager:
         fig, axs = plt.subplots(r, c, figsize=(c*4, r*4))
         axs = axs.reshape(r, c)
         if merge_data:
-            self.plot_merge_data(axs, data_names, metric_names, model_names)
+            self.plot_merge_data(axs, data_names, metric_names, model_names, **kwargs)
         else:
-            self.plot_sparse(axs, data_names, metric_names, model_names)
+            self.plot_sparse(axs, data_names, metric_names, model_names, **kwargs)
         fig.tight_layout()
         if to_file:
-            dpi = kwargs.get('dpi', 100)
             fig.savefig(to_file, dpi=dpi)
     
-    def plot_sparse(self, axs, data_names, metric_names, model_names):
+    def plot_sparse(self, axs, data_names, metric_names, model_names, **kwargs):
         for i, data_name in enumerate(data_names):
             for j, metric_name in enumerate(metric_names):
                 for model_name in model_names:
                     ax = axs[i, j]
-                    self.painters[model_name].plot(ax, data_name, metric_name)
+                    self.painters[model_name].plot(ax, data_name, metric_name, **kwargs)
                     ax.set_title(f"{data_name} {metric_name}")
                     ax.grid(True, ls='--', alpha=0.5)
                     ax.set_xlim(left=0)
                     ax.legend()
     
-    def plot_merge_data(self, axs, data_names, metric_names, model_names):
+    def plot_merge_data(self, axs, data_names, metric_names, model_names, **kwargs):
+        # update model data frame first
         for model_name in model_names:
             self.painters[model_name].get_dataframe(data_names)
-            for i, metric_name in enumerate(metric_names):
+        for i, metric_name in enumerate(metric_names):
+            for model_name in model_names:
                 print(f"Seaborn is ploting '{metric_name}'...")
                 ax = axs[0, i]
-                self.painters[model_name].plot_merge_data(ax, metric_name)
+                self.painters[model_name].plot_merge_data(ax, metric_name, **kwargs)
                 ax.set_title(f"{metric_name}")
                 ax.grid(True, ls='--', alpha=0.5)
                 ax.set_xlim(left=0)
