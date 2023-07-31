@@ -1,3 +1,5 @@
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import re, warnings, tensorflow
 from pathlib import Path
 from utils import read_json
@@ -8,6 +10,11 @@ IGNORE_DATANAME = [
     r"^cp",  # checkpoint data
     r"^best", # best episode data
 ]
+LEGEND_LOC = {
+    "step": "upper left",
+    "q_value": "lower right",
+    "loss": "upper right",
+}
 
 def is_ignore_data(name):
     for s in IGNORE_DATANAME:
@@ -116,6 +123,41 @@ class NameCollection:
         if len(self.names[key]) < len(names):
             self.names[key] = names
 
+def reset_xticks(ax:plt.Axes, min=None, max=None):
+    xticks = np.array(ax.get_xticks())
+    if min is None: min = xticks.min()
+    if max is None: max = xticks.max()
+    xticks = xticks[(xticks >= min) & (xticks <= max)]
+    xticks = np.unique(np.r_[min,xticks,max])
+    ax.set_xlim(left=min, right=max)
+    ax.set_xticks(xticks)
+
+class PlotRange:
+    def __init__(self, min=None, max=None):
+        self.min, self.max = min, max
+    
+    def reset(self):
+        self.min, self.max = None, None
+    
+    def update(self, min=None, max=None):
+        if min is not None and (self.min is None or min < self.min):
+            self.min = min
+        if max is not None and (self.max is None or max > self.max):
+            self.max = max
+
+    # 加上单引号，解决类的循环导入问题，并且不要重写两个一样的函数名
+    # 和C++不同，Python只会保留相同函数名中最后一个
+    def update_from_range(self, range:'PlotRange'):
+        self.update(range.min, range.max)
+    
+    def set_ax(self, ax:plt.Axes):
+        max = self.max + 10 - self.max % 10
+        min = self.min - self.min % 10
+        reset_xticks(ax, min, max)
+
+    def __repr__(self) -> str:
+        return f"<type=PlotRange, value={(self.min, self.max)}>"
+
 class LogsManager:
     """
     To plot the logs in such log-files tree:
@@ -218,27 +260,33 @@ class LogsManager:
     def plot_sparse(self, axs, data_names, metric_names, model_names, **kwargs):
         for i, data_name in enumerate(data_names):
             for j, metric_name in enumerate(metric_names):
+                ax = axs[i, j]
                 for model_name in model_names:
-                    ax = axs[i, j]
                     self.painters[model_name].plot(ax, data_name, metric_name, **kwargs)
-                    ax.set_title(f"{data_name} {metric_name}")
-                    ax.grid(True, ls='--', alpha=0.5)
-                    ax.set_xlim(left=0)
-                    ax.legend()
+                ax.set_title(f"{data_name} {metric_name}")
+                ax.grid(True, ls='--', alpha=0.5)
+                ax.set_xlim(left=0)
+                if metric_name in LEGEND_LOC.keys():
+                    ax.legend(loc=LEGEND_LOC[metric_name])
+                else: ax.legend()
     
     def plot_merge_data(self, axs, data_names, metric_names, model_names, **kwargs):
         # update model data frame first
         for model_name in model_names:
             self.painters[model_name].get_dataframe(data_names)
+        range = PlotRange()
         for i, metric_name in enumerate(metric_names):
+            ax = axs[0, i]
+            range.reset()
             for model_name in model_names:
-                print(f"Seaborn is ploting '{metric_name}'...")
-                ax = axs[0, i]
-                self.painters[model_name].plot_merge_data(ax, metric_name, **kwargs)
-                ax.set_title(f"{metric_name}")
-                ax.grid(True, ls='--', alpha=0.5)
-                ax.set_xlim(left=0)
-                ax.legend(loc='upper left')
+                print(f"Seaborn is ploting '{model_name}' '{metric_name}'...")
+                self.painters[model_name].plot_merge_data(ax, metric_name, range, **kwargs)
+            ax.set_title(f"{metric_name}")
+            ax.grid(True, ls='--', alpha=0.5)
+            range.set_ax(ax)
+            if metric_name in LEGEND_LOC.keys():
+                ax.legend(loc=LEGEND_LOC[metric_name])
+            else: ax.legend()
     
 class ModelLogsPainter:
     """
@@ -274,10 +322,16 @@ class ModelLogsPainter:
             painter = self.painters[data_name]
             if self.df is None: self.df = painter.to_df()
             else: self.df = pd.concat([self.df, painter.to_df()]).reset_index(drop=True)
+        self.df_notna = ~self.df.groupby('episode').mean().isna()
+    
+    def get_notna_range(self, metric_name) -> PlotRange:
+        true_index = self.df_notna[self.df_notna[metric_name]].index
+        return PlotRange(true_index.min(), true_index.max())
 
-    def plot_merge_data(self, ax, metric_name, **kwargs):
+    def plot_merge_data(self, ax, metric_name, range:PlotRange, **kwargs):
         if self.df is None:
             raise Exception("Error: model_logs_painter.df=None, it hasn't init!")
+        range.update_from_range(self.get_notna_range(metric_name))
         sns.lineplot(ax=ax, data=self.df, x='episode', y=metric_name, label=self.name, **kwargs)
 
 def get_suffix(path):
@@ -303,7 +357,7 @@ class DataLogsPainter:
             path_epoch_sizes = self.path.joinpath("epoch_sizes.json")
             if not path_epoch_sizes.exists():
                 # raise Exception(f"Error: {self.model_name}'s {self.data_name} dataset don't have 'epoch_sizes.json' file!")
-                warnings.warn("Warning: {self.model_name}'s {self.data_name} dataset don't have 'epoch_sizes.json' file, default by 1")
+                warnings.warn(f"Warning: {self.model_name}'s {self.data_name} dataset don't have 'epoch_sizes.json' file, default by 1")
             else: self.epoch_sizes = read_json(path_epoch_sizes)
         files = []
         for f in self.path.iterdir():
