@@ -70,7 +70,7 @@ class Logs:
     def reset(self):
         # BUGFIX:
         #   Can't use self.logs = self.init_logs.copy()
-        #   if use this, the 'keras.metrics.Metric' will not be reset
+        #   'keras.metrics.Metric' and 'list' will not be reset
         for key, value in self.logs.items():
             if isinstance(value, int):
                 self.logs[key] = 0
@@ -90,7 +90,7 @@ class Logs:
                     target.append(value)
                 elif isinstance(target, int):
                     self.logs[key] = value
-    # show_frame=False
+
     def to_dict(self, drops:list=None):
         ret = self.logs.copy()
         for key, value in ret.items():
