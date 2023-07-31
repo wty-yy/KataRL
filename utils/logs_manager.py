@@ -1,8 +1,10 @@
-import re, warnings
+import re, warnings, tensorflow
 from pathlib import Path
-from utils import read_json, get_time_str
-from agents.constants import PATH
-IGNORE_DATANAME = [  # use regex to match which you want ignore
+from utils import read_json
+keras = tensorflow.keras
+
+# Use regex to match which dataname you want ignore in LogsManager
+IGNORE_DATANAME = [  
     r"^cp",  # checkpoint data
     r"^best", # best episode data
 ]
@@ -20,6 +22,88 @@ import matplotlib.pyplot as plt
 plt.rcParams['font.family'] = ['serif', 'SimSun']
 plt.rcParams['mathtext.fontset'] = 'cm'
 plt.rcParams['axes.unicode_minus'] = False
+
+class Logs:
+    """
+    The logs during 'one episode' of the Agent.
+    
+    -   support_type (list): The type that logs support to update
+
+    Initialize:
+    -   init_logs (dict): What logs you want to memory, such like:
+            init_logs = {
+                'episode': 0,
+                'step': 0,
+                'q_value': keras.metrics.Mean(name='q_value'),
+                'loss': keras.metrics.Mean(name='loss'),
+                'frame': []
+            }
+    
+    Function
+    -   reset(): reset the logs, use it after one episode.
+
+    -   update(keys:list, values:list):
+            update 'zip(keys, values)' one by one in logs.
+
+    -   to_dict(drops:list):
+            Cast 'logs' to 'dict' for saving to 'utils/History' class.
+            -   drops: The keys in logs that you don't want to return.
+    """
+    support_type = [
+        int,
+        list,
+        keras.metrics.Metric,
+    ]
+
+    def __init__(self, init_logs:dict):
+        for key, value in init_logs.items():
+            flag = False
+            for type in self.support_type:
+                if isinstance(value, type):
+                    flag = True; break
+            if not flag:
+                raise Exception(
+                    f"Error: Don't know {key}'s type '{type(value)}'!"
+                )
+        self.logs = init_logs
+    
+    def reset(self):
+        # BUGFIX:
+        #   Can't use self.logs = self.init_logs.copy()
+        #   if use this, the 'keras.metrics.Metric' will not be reset
+        for key, value in self.logs.items():
+            if isinstance(value, int):
+                self.logs[key] = 0
+            elif isinstance(value, list):
+                self.logs[key] = []
+            elif isinstance(value, keras.metrics.Metric):
+                value.reset_state()
+        # self.logs = self.init_logs.copy()
+    
+    def update(self, keys:list, values:list):
+        for key, value in zip(keys, values):
+            if value is not None:
+                target = self.logs[key]
+                if isinstance(target, keras.metrics.Metric):
+                    target.update_state(value)
+                elif isinstance(target, list):
+                    target.append(value)
+                elif isinstance(target, int):
+                    self.logs[key] = value
+    # show_frame=False
+    def to_dict(self, drops:list=None):
+        ret = self.logs.copy()
+        for key, value in ret.items():
+            if value is not None:
+                target = self.logs[key]
+                if isinstance(target, keras.metrics.Metric):
+                    ret[key] = round(float(target.result()), 5) \
+                        if target.count else None
+        if drops is not None:
+            for drop in drops:
+                ret.pop(drop)
+        return ret
+
 
 class NameCollection:
 

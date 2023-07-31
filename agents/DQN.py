@@ -4,6 +4,7 @@ from agents.constants.DQN import *
 from agents.models.utils import build_model
 from envs.gym_env import GymEnv
 from utils import make_onehot
+from utils.logs_manager import Logs
 from tqdm import tqdm
 import tensorflow as tf
 import numpy as np
@@ -11,43 +12,16 @@ import numpy as np
 from envs import Env
 keras = tf.keras
 
-class Logs:
-    def __init__(self):
-        self.logs = {
+def get_logs() -> Logs:
+    return Logs(
+        init_logs = {
             'episode': 0,
             'step': 0,
             'q_value': keras.metrics.Mean(name='q_value'),
             'loss': keras.metrics.Mean(name='loss'),
             'frame': []
         }
-    
-    def reset(self):
-        self.logs['episode'] = 0
-        self.logs['step'] = 0
-        self.logs['frame'] = []
-        self.logs['q_value'].reset_state()
-        self.logs['loss'].reset_state()
-    
-    def update(self, keys, values):
-        for key, value in zip(keys, values):
-            if value is not None:
-                target = self.logs[key]
-                if isinstance(target, keras.metrics.Metric):
-                    target.update_state(value)
-                elif isinstance(target, list):
-                    target.append(value)
-                elif isinstance(target, int):
-                    self.logs[key] = value
-    
-    def to_dict(self, show_frame=False):
-        ret = self.logs.copy()
-        for key, value in ret.items():
-            if value is not None:
-                target = self.logs[key]
-                if isinstance(target, keras.metrics.Metric):
-                    ret[key] = round(float(target.result()), 5) if target.count else None
-        if not show_frame: ret.pop('frame')
-        return ret
+    )
     
 class MemoryCache:
     """
@@ -99,7 +73,7 @@ class DQN(Agent):
         self.model = build_model(model_name, self.env.state_shape, load_id=load_id)
         self.optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
         self.loss_fn = keras.losses.MeanSquaredError()
-        self.logs = Logs()
+        self.logs = get_logs()
         self.epsilon = epsilon_max
         self.batch_size, self.memory_size, self.start_fit_size = \
             batch_size, memory_size, start_fit_size
@@ -116,6 +90,7 @@ class DQN(Agent):
                 loss, q_value = self.fit()
                 frame = self.env.render() if self.verbose else None
                 self.logs.update(['q_value', 'loss', 'frame'], [q_value, loss, frame])
+                # BUGFIX: forget use new state
                 state = state_
                 if terminal: break
             self.logs.update(['episode', 'step'], [episode, step])
@@ -133,9 +108,6 @@ class DQN(Agent):
         else:
             q_pred = self.model(tf.constant([state]))[0]
             action = np.argmax(q_pred)
-            # print(self.epsilon)
-            # print(q_pred)
-            # print(action)
             return action
 
     def remember(self, state, action, reward, state_, terminal):
@@ -146,8 +118,6 @@ class DQN(Agent):
         with tf.GradientTape() as tape:
             q_state = self.model(X)
             loss = self.loss_fn(y, q_state)
-            # loss = keras.losses.MSE(y, q_state)
-            # loss = tf.reduce_sum(tf.square(q_state - y)) / batch_size
         grads = tape.gradient(loss, self.model.trainable_weights)
         self.optimizer.apply_gradients(zip(grads, self.model.trainable_weights))
         return loss, tf.reduce_mean(q_state)
@@ -163,16 +133,16 @@ class DQN(Agent):
         q_target = q_state.numpy()
         q_target[a_onehot] = td_target
 
-        # print(f"{r=}\n{td_target=}\n{a=}\n{q_state=}\n{q_target=}")
-
         loss, q_value = self.train_step(s, q_target)
-        # decrease epsilon after one fit!
+        # BUGFIX: decrease epsilon after one fit!
         self.epsilon = max(self.epsilon * epsilon_decay, epsilon_min)
         return loss, q_value
 
     def update_history(self):
-        self.best_episode.update_best(now=self.logs.logs['step'], logs=self.logs.to_dict(show_frame=True))
-        self.history.update_dict(self.logs.to_dict())
+        self.best_episode.update_best(
+            now=self.logs.logs['step'], logs=self.logs.to_dict()
+        )
+        self.history.update_dict(self.logs.to_dict(drops=['frame']))
     
 if __name__ == '__main__':
     dqn = DQN(

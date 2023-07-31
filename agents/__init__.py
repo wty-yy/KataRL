@@ -6,14 +6,15 @@ from agents.constants import PATH
 class Agent:
     """
     Initialize:
-    -   env: The environment that agent interact with
-    -   verbose: Whether render the env and save the frames
-    -   agent_name: The agent's name
-    -   agent_id: The agent's id (means which agent is training)
-    -   model_name: Which DNN model to use in '/agents/models'
-    -   model_id: Load model weight from (if not None)
-                  '/logs/agent_name/cp-agent_id/model_id'
-    -   timestr: The timestamp when agent was created
+    -   env: The environment that agent interact with.
+    -   verbose: Whether render the env and save the frames.
+    -   agent_name: The agent's name.
+    -   agent_id: The agent's id (means which agent is training).
+    -   model_name: Which DNN model to use in '/agents/models'.
+    -   load_id: Load model weight from (if not None)
+                  '/logs/agent_name/cp-agent_id/model_id'.
+    -   episodes: Total training episodes.
+    -   timestr: The timestamp when agent was created.
     Logs:
     -   The logs of the Agent will save in dir
         '/logs/agent_name/' and there will be two subdir:
