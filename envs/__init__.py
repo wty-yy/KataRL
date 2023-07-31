@@ -1,4 +1,21 @@
 class Env():
+    """
+    The virtual environment for Agent training.
+
+    Initialize:
+    -   name: The name of Env.
+    -   seed: The random seed of Env at each 'reset'.
+    -   max_step: The maximum step limit in Env.
+    -   state_shape: State shape of Env.
+    -   action_shape: Action shape of Env.
+
+    Function:
+    -   step(action): Do 'action' in Env.
+
+    -   reset(): Reset Env.
+
+    -   render(): Return the render frame of Env.
+    """
     
     def __init__(
             self, name, seed=None, max_step=None,

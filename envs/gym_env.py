@@ -1,6 +1,7 @@
 import gymnasium as gym
 from envs import Env
 
+# If joining a Env, the following four parameters must be given.
 max_step = {
     "CartPole-v1": 500
 }
@@ -20,6 +21,9 @@ reward = {
 }
 
 class GymEnv(Env):
+    """
+    The OpenAI Gymnasium, create a new Env by the Env.name
+    """
     
     def __init__(self, name, seed=None, **kwargs):
         if max_step.get(name) is None:
