@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
+generate gif file from frames.
 用于生成gymnasium环境的gif动态图
 '''
 

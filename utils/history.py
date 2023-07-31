@@ -3,6 +3,36 @@ from utils import save_json, save_npy
 from utils.logs_manager import LogsManager
 
 class History:
+    """
+    Save episode logs (utils/logs_manager.py) 'Logs.to_dir()'.
+    **
+    This class will be instantiated in Agent class(parent),
+    to variable 'best_episode' and 'history'
+    **
+
+    Initialize:
+    -   agent_name: The name of Agent.
+    -   agent_id: The id of Agent.
+    -   timestr: The timestamp when the Agent was created.
+    -   fname: The saving file's prefix.
+    -   type: The saving file's suffix.
+
+    Function:
+    - update_item(key, value): Update item with key and value.
+
+    - update_dict(d:dict): Add dict of 'd' to history.
+
+    - update_best(now, logs):
+        Compare 'now' with 'self.best', if 'now' is bigger,
+        then update history with 'logs'.
+
+    - to_file():
+        The history will be saved at '/logs/agent_name/history-id',
+        with file name 'fname-timestr.type'
+
+    - plot():
+        Use `utils/logs_manager` to plot the history.
+    """
 
     def __init__(self, agent_name, agent_id, timestr, fname, type=None):
         self.agent_name, self.agent_id, self.timestr, self.fname, self.type = \

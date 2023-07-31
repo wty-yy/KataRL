@@ -1,3 +1,16 @@
+"""
+General functions:
+
+-   make_onehot(x, depth): Convert x to one-hot vectors with depth.
+
+-   get_time_str(): Return current datetime by str.
+
+-   'json', 'npy' file save/read:
+    (convert '*' with 'json' or 'npy')
+    -   save_*(path, value): Save value to path, use type of *.
+    -   read_*(path): Read file from path, use type of *.
+"""
+
 import numpy as np
 from datetime import datetime
 import json

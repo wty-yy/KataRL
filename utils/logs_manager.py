@@ -78,7 +78,6 @@ class Logs:
                 self.logs[key] = []
             elif isinstance(value, keras.metrics.Metric):
                 value.reset_state()
-        # self.logs = self.init_logs.copy()
     
     def update(self, keys:list, values:list):
         for key, value in zip(keys, values):
@@ -106,6 +105,9 @@ class Logs:
 
 
 class NameCollection:
+    """
+    To memory the names that load in LogsManager.
+    """
 
     def __init__(self):
         self.names = {'model': [], 'data': [], 'metric': []}
@@ -115,9 +117,65 @@ class NameCollection:
             self.names[key] = names
 
 class LogsManager:
+    """
+    To plot the logs in such log-files tree:
+        -----------------------------------
+        /model
+            /data-0
+                /history-0.json
+                /history-1.json
+                /...
+            /data-1
+                /history-0.json
+                /history-1.json
+                /...
+            /data-...
+        P.S. The file name is flexible.
+        -----------------------------------
+    Function:
+    - plot(
+        data_names, metric_names, model_names,
+        to_file, merge_data:bool, dpi:int
+    ):  Plot with 'data_names', 'metric_names', 'model_names',
+        support two version:
+        -   Sparse plot (merge_data=False):
+            Plot figures in rxc, r=len(data_names), c=len(metric_names)
+
+            let d_i:=data_names[i], m_j:=metric_names[j], plot result:
+                    m_1      m_2      m_3      ...
+                 -----------------------------------
+                 |        |        |        |
+            d_1  |  fig11 |  fig12 |  fig13 |  ...
+                 |        |        |        |
+                 -----------------------------------
+                 |        |        |        |
+            d_2  |  fig21 |  fig22 |  fig23 |  ...
+                 |        |        |        |
+                 -----------------------------------
+                 |        |        |        |
+            ...  |  ...   |  ...   |  ...   |  ...
+                 |        |        |        |
+        -   Merge data plot (merge_data=True):
+            Plot figures in 1xc, c=len(metric_names)
+
+            let m_j:=metric_names[j], plot result:
+                        m_1      m_2      m_3      ...
+                    -----------------------------------
+                    |        |        |        |
+            merge_d |  fig1  |  fig2  |  fig3  |  ...
+                    |        |        |        |
+            where, 'merge_d' is the 95% confidence interval from
+            'data_names' (plot by sns.lineplot)
+
+    -   update(path, model_name):
+        -   path: The model-logs path, need stisfy the log-files tree.
+        -   model_name: The model's name.
+
+    -   reset(): Reset the LogsManager.
+    """
 
     def __init__(self):
-        self.painters = {}
+        self.painters = {}  # ModelLogsManager
         self.name_collection = NameCollection()
 
     def update(self, path, model_name):
@@ -133,8 +191,8 @@ class LogsManager:
             self, data_names=None, metric_names=None, 
             model_names=None, 
             to_file=None, 
-            merge_data=False,
-            dpi=100,
+            merge_data:bool=False,
+            dpi:int=100,
             **kwargs
         ):
         if data_names is None: data_names = self.name_collection.names['data']
@@ -183,10 +241,13 @@ class LogsManager:
                 ax.legend(loc='upper left')
     
 class ModelLogsPainter:
+    """
+    Save model level logs.
+    """
 
     def __init__(self, path:Path, name, name_collection):
         self.path, self.name, self.name_collection = path, name, name_collection
-        self.painters = {}
+        self.painters = {}  # DataLogsPainter
         self.epoch_sizes = None
         self.__read_dir()
         self.df = None
@@ -223,6 +284,9 @@ def get_suffix(path):
     return path.name.split('.')[-1]
 
 class DataLogsPainter:
+    """
+    Save data level logs. Can merge *.json files.
+    """
 
     suffix_list = ['csv', 'json']
 
