@@ -1,12 +1,12 @@
 import tensorflow as tf
-from agents.models import Model, keras
+from agents.models import Model
 keras = tf.keras
 layers = keras.layers
 
 class MLP(Model):
 
-    def __init__(self, input_shape, load_id, **kwargs):
-        super().__init__(input_shape, load_id, **kwargs)
+    def __init__(self, load_id, **kwargs):
+        super().__init__(load_id, **kwargs)
 
     def build(self) -> Model:
         inputs = layers.Input(shape=self.input_shape, name='State')

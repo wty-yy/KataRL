@@ -1,7 +1,6 @@
 from agents import Agent
 from agents.constants import *
 from agents.constants.DQN import *
-from agents.models.utils import build_model
 from envs.gym_env import GymEnv
 from utils import make_onehot
 from utils.logs_manager import Logs
@@ -62,16 +61,14 @@ class DQN(Agent):
     def __init__(
             self, env:Env=None, verbose=False,
             agent_name='DQN', agent_id=0,
-            model_name='MLP', load_id=None,
+            model=None,
             episodes=100,
             batch_size=batch_size,  # constant.DQN
             memory_size=memory_size,  # constant.DQN
             start_fit_size=start_fit_size,  # constant.DQN
             **kwargs
         ):
-        super().__init__(env, verbose, agent_name, agent_id, model_name, load_id, episodes, **kwargs)
-        self.model = build_model(model_name, self.env.state_shape, load_id=load_id)
-        self.optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
+        super().__init__(env, verbose, agent_name, agent_id, model, episodes, **kwargs)
         self.loss_fn = keras.losses.MeanSquaredError()
         self.logs = get_logs()
         self.epsilon = epsilon_max
@@ -118,8 +115,8 @@ class DQN(Agent):
         with tf.GradientTape() as tape:
             q_state = self.model(X)
             loss = self.loss_fn(y, q_state)
-        grads = tape.gradient(loss, self.model.trainable_weights)
-        self.optimizer.apply_gradients(zip(grads, self.model.trainable_weights))
+        grads = tape.gradient(loss, self.model.get_trainable_weights())
+        self.model.apply_gradients(grads)
         return loss, tf.reduce_mean(q_state)
 
     def fit(self):

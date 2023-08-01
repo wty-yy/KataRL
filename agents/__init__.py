@@ -1,6 +1,7 @@
 from utils.history import History
 from utils import get_time_str
 from envs import Env
+from agents.models import Model
 from agents.constants import PATH
 
 class Agent:
@@ -33,13 +34,13 @@ class Agent:
     def __init__(
             self, env:Env=None, verbose=False,
             agent_name=None, agent_id=None,
-            model_name=None, load_id=None,
+            model:Model=None,
             episodes=None, **kwargs
         ):
         self.env, self.verbose, self.agent_name, self.agent_id, \
-            self.model_name, self.load_id, self.episodes = \
+            self.model, self.episodes = \
             env, verbose, agent_name, agent_id, \
-            model_name, load_id, episodes
+            model, episodes
         self.timestr = get_time_str()
 
         # setting logs path early, since history will use PATH.HISTORY
