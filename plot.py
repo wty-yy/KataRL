@@ -1,3 +1,4 @@
+from pathlib import Path
 from agents.constants import PATH
 from utils.logs_manager import LogsManager
 from utils import get_time_str, read_npy
@@ -5,7 +6,6 @@ from utils.generate_gif import save_frames_as_gif
 import matplotlib.pyplot as plt
 import time
 import warnings
-from pathlib import Path
 import argparse
 
 class PlotManager:

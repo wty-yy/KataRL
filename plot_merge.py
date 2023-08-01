@@ -1,7 +1,7 @@
+from pathlib import Path
 import argparse, warnings
 from utils import get_time_str
 from utils.logs_manager import LogsManager
-from pathlib import Path
 from agents.constants import PATH
 
 def load_parse():
