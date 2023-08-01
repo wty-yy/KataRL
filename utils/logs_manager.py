@@ -2,9 +2,9 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import re, warnings, tensorflow
 
-def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
+def custom_warning_message(message, category, filename, lineno, file=None, line=None):
         return '%s, line %s,\n%s\n\n' % (filename, lineno, message)
-warnings.formatwarning = warning_on_one_line
+warnings.formatwarning = custom_warning_message
 
 from pathlib import Path
 from utils import read_json
