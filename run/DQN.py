@@ -3,15 +3,16 @@ from envs.gym_env import GymEnv
 
 # DQN-hyper-args
 args = {
-    "batch_size": [1, 2, 3, 4, 6, 8, 16],
+    "batch_size": [1],
     "memory_size": 1e6,
     "start_fit_size": 1e4,
     "episodes": 1000
 }
 
-if  __name__ == '__main__':
+# DQN test on cartpole
+def DQN_test():
     start_idx = 0
-    N = 1
+    N = 3
     for batch_size in args['batch_size']:
         for idx in range(start_idx, start_idx + N):
             print(f"{idx}/{N}:")
@@ -22,3 +23,6 @@ if  __name__ == '__main__':
                 batch_size=batch_size
             )
             dqn.train()
+
+if  __name__ == '__main__':
+    DQN_test()
