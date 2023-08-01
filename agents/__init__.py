@@ -1,7 +1,6 @@
 from utils.history import History
 from utils import get_time_str
 from envs import Env
-from agents.models import Model
 from agents.constants import PATH
 
 class Agent:
@@ -11,9 +10,6 @@ class Agent:
     -   verbose: Whether render the env and save the frames.
     -   agent_name: The agent's name.
     -   agent_id: The agent's id (means which agent is training).
-    -   model_name: Which DNN model to use in '/agents/models'.
-    -   load_id: Load model weight from (if not None)
-                  '/logs/agent_name/cp-agent_id/model_id'.
     -   episodes: Total training episodes.
     -   timestr: The timestamp when agent was created.
     Logs:
@@ -28,19 +24,18 @@ class Agent:
                 during this training
         -   checkpoints: `/logs/agent_name/cp-id`
             Save the model weight at each episode end,
-            look at agents.models.save_weigth()
+            look at agents.models.Model.save_weigth()
     """
     
     def __init__(
             self, env:Env=None, verbose=False,
             agent_name=None, agent_id=0,
-            model:Model=None,
             episodes=None, **kwargs
         ):
         self.env, self.verbose, self.agent_name, self.agent_id, \
-            self.model, self.episodes = \
+            self.episodes = \
             env, verbose, agent_name, agent_id, \
-            model, episodes
+            episodes
         self.timestr = get_time_str()
 
         # setting logs path early, since history will use PATH.HISTORY

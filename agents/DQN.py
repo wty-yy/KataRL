@@ -61,14 +61,15 @@ class DQN(Agent):
     def __init__(
             self, env:Env=None, verbose=False,
             agent_name='DQN', agent_id=0,
-            model=None,
             episodes=100,
+            model=None,  # Q value model
             batch_size=batch_size,  # constant.DQN
             memory_size=memory_size,  # constant.DQN
             start_fit_size=start_fit_size,  # constant.DQN
             **kwargs
         ):
-        super().__init__(env, verbose, agent_name, agent_id, model, episodes, **kwargs)
+        super().__init__(env, verbose, agent_name, agent_id, episodes, **kwargs)
+        self.model = model
         self.loss_fn = keras.losses.MeanSquaredError()
         self.logs = get_logs()
         self.epsilon = epsilon_max

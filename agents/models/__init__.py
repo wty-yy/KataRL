@@ -36,8 +36,9 @@ class Model:
         be auto called if load_id is not None.
     """
 
-    def __init__(self, lr=1e-3, load_id=None, verbose=True, **kwargs):
-        self.lr, self.load_id, self.verbose = lr, load_id, verbose
+    def __init__(self, lr=1e-3, load_id=None, verbose=True, name='model', **kwargs):
+        self.lr, self.load_id, self.verbose, self.name = \
+            lr, load_id, verbose, name
         self.save_id = 0
         self.model = self.build_model()
         self.optimizer = self.build_optimizer(self.lr)
@@ -47,7 +48,7 @@ class Model:
         if verbose: self.plot_model()
 
     def plot_model(self):
-        path = PATH.AGENT.joinpath('model.png')
+        path = PATH.FIGURES.joinpath(f'{self.name}.png')
         print(f"plot model struct png at '{path.absolute()}'")
         keras.utils.plot_model(self.model, to_file=path, show_shapes=True)
     
