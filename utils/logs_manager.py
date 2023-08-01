@@ -1,6 +1,11 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import re, warnings, tensorflow
+
+def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
+        return '%s, line %s,\n%s\n\n' % (filename, lineno, message)
+warnings.formatwarning = warning_on_one_line
+
 from pathlib import Path
 from utils import read_json
 keras = tensorflow.keras
@@ -357,7 +362,10 @@ class DataLogsPainter:
             path_epoch_sizes = self.path.joinpath("epoch_sizes.json")
             if not path_epoch_sizes.exists():
                 # raise Exception(f"Error: {self.model_name}'s {self.data_name} dataset don't have 'epoch_sizes.json' file!")
-                warnings.warn(f"Warning: {self.model_name}'s {self.data_name} dataset don't have 'epoch_sizes.json' file, default by 1")
+                warnings.warn(f"\
+Warning: {self.model_name}'s {self.data_name} \
+dataset don't have 'epoch_sizes.json' file, \
+default by 1")
             else: self.epoch_sizes = read_json(path_epoch_sizes)
         files = []
         for f in self.path.iterdir():

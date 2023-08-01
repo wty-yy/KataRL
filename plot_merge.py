@@ -32,12 +32,13 @@ def load_parse():
         for model_name in logs_path.iterdir():
             if not model_name.is_dir(): continue
             model_names.append(model_name)
-        raise warnings.warn("\n\
-Warning: The model_names is None,\n\
+        warnings.warn("\
+Warning: The model_names is None,\
 it will plot all the model under the logs path")
     logs_manager = LogsManager()
     for model_name in model_names:
         logs_manager.update(logs_path.joinpath(model_name), model_name)
+    print(logs_manager.name_collection.names)
     logs_manager.plot(
         to_file=PATH.FIGURES.joinpath(get_time_str()+'-merge.png'),
         merge_data=True, alpha=args.alpha, dpi=args.dpi
