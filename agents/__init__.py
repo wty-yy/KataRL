@@ -33,7 +33,7 @@ class Agent:
     
     def __init__(
             self, env:Env=None, verbose=False,
-            agent_name=None, agent_id=None,
+            agent_name=None, agent_id=0,
             model:Model=None,
             episodes=None, **kwargs
         ):
@@ -60,6 +60,9 @@ class Agent:
         pass
 
     def fit(self):
+        pass
+    
+    def update_history(self):
         pass
 
 if __name__ == '__main__':
