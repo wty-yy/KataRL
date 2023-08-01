@@ -2,22 +2,54 @@
 
 ## Introduce 介绍
 
-A testing framework for reinforcement learning, available models includes:
+A testing framework for reinforcement learning, support function:
 
-一个用于强化学习模型测试框架，当前包含模型：
+一个用于强化学习模型测试框架，支持以下功能：
 
-- DQN
+- Agent interacts with Environment 智能体与环境交互
+- Training parameters record 训练参数的记录
+- Model weights save and callback 模型权重保存及回调
+- Draw log images 绘制日志图像
 
-**Framework function 框架功能：**
+To be adding 待添加：
+
+- [ ] Multi-Agent 多智能体
+
+Available models includes 当前包含模型：
+
+- DQN (Deep Q-Learning Network)
+
+Tried environment 尝试过的环境：
+
+- `CartPole-v1` (gymnasium)
+
+**Instruction 运行方法**：
+
+In order to read the python path, the main program must be run in the root directory, call the algorithm test from the main program, for example:
+
+为了能够读取路径，必须在根目录下运行主程序，从主程序中调用算法测试，例如：
+
+```shell
+python main.py
+
+# main.py
+# from run.DQN.cartpole import DQN_test  # Your test model
+# 
+# if  __name__ == '__main__':
+#     DQN_test()
+```
+
+**Frame function example 框架功能栗子：**
 
 - Train the Agent in the specified training environment. 在指定的训练环境下训练智能体。
 
   ```python
   dqn = DQN(
-      agent_name=f'DQN-1',
+      agent_name=f'DQN-4',
+      model=MLP(),
       env=GymEnv(name="CartPole-v1", render_mode="rgb_array"),
-      verbose=False, agent_id=0, episodes=1000, load_id=None,
-      batch_size=1
+      verbose=False, agent_id=idx, episodes=1000, load_id=None,
+      batch_size=4
   )
   dqn.train()
   ```
@@ -40,9 +72,10 @@ A testing framework for reinforcement learning, available models includes:
   python plot_merge.py -p "train-logs/DQN-logs" -m "DQN-1" "DQN-2" "DQN-6" "DQN-16" -a 0.5 -dpi 300
   ```
 
-  ![DQN](archives/DQN-figures/DQN_batch_1_2_6_16.png)
+  ![DQN](archives/figures/DQN/cartpole/DQN-batch-1-2-6-16.png)
 
-  
+
+### Test 测试结果
 
 ## Framework 框架架构
 
