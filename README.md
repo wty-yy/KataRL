@@ -52,6 +52,7 @@ shell中树形文件图生成代码：`tree -f -I "__pycache__|*logs|LICENSE|*.m
 
 ```shell
 RL-framework
+├── ./archives*  "Save some figures"
 ├── ./agents  "Agent algorithms package"
 │   ├── ./agents/__init__.py  "Agent class(parent)"
 │   ├── ./agents/DQN.py  "DQN algorithm"
@@ -59,9 +60,7 @@ RL-framework
 │   │   ├── ./agents/constants/__init__.py  "General hyper-params"
 │   │   └── ./agents/constants/DQN.py  "DQN hyper-params"
 │   └── ./agents/models  "Models package"
-│       ├── ./agents/models/__init__.py  "Model class(parent)"
-│       ├── ./agents/models/MLP.py  "MLP model"
-│       └── ./agents/models/utils.py  "General func"
+│       └── ./agents/models/__init__.py  "Model class(parent)"
 ├── ./envs  "Environment package"
 │   ├── ./envs/__init__.py  "Environment class(parent)"
 │   └── ./envs/gym_env.py  "openai-gymnasium"
@@ -69,9 +68,15 @@ RL-framework
 |	├── ./utils/__init__.py  "Common func"
 |   ├── ./utils/generate_gif.py  "Generate gif from frames"
 |   ├── ./utils/history.py  "History class"
-|   └── ./utils/logs_manager.py "LogsManager and Logs class"
-├── ./plot.py  "PlotManager class"
-├── ./run.py  "Algorithm run test"
+|   └── ./utils/logs_manager.py  "LogsManager and Logs class"
+|── ./run  "Run algorithm test"
+|	├── ./run/DQN  "DQN"
+│   │   └── ./run/DQN/cartpole.py  "DQN in Cartpole Env"
+|   └── ./run/A2C  "Advantage Actor-Critic"
+│       └── ./run/A2C/cartpole.py  "A2C in Cartpole Env"
+├── ./main.py  "Main test interface, call test function in ./run/model.py"
+├── ./plot.py  "PlotManager class (use argparse to call)"
+├── ./plot_merge.py  "Plot merge logs figure (use argparse to call)"
 └── ./train-logs*  "Algorithm training logs"
 ```
 
