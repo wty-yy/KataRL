@@ -30,7 +30,7 @@ args = {
 }
 
 # DQN test on cartpole
-def DQN_test():
+def DQN_cartpole():
     start_idx = 0
     N = 3
     for batch_size in args['batch_size']:
