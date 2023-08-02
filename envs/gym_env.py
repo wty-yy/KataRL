@@ -11,12 +11,12 @@ state_shape = {
 action_shape = {
     "CartPole-v1": (1,)
 }
-reward = {
+rewards = {
     "positive": {
         "CartPole-v1": 1,
     },
     "negative": {
-        "CartPole-v1": -10,
+        "CartPole-v1": -20,
     }
 }
 
@@ -32,9 +32,9 @@ class GymEnv(Env):
             raise Exception(f"Don't know the state_shape of the environment: '{name}'")
         if action_shape.get(name) is None:
             raise Exception(f"Don't know the action_shape of the environment: '{name}'")
-        if reward['positive'].get(name) is None:
+        if rewards['positive'].get(name) is None:
             raise Exception(f"Don't know the positive reward of the environment: '{name}'")
-        if reward['negative'].get(name) is None:
+        if rewards['negative'].get(name) is None:
             raise Exception(f"Don't know the negative reward of the environment: '{name}'")
 
         super().__init__(
@@ -52,7 +52,8 @@ class GymEnv(Env):
         self.step_count += 1
         state, reward, terminal, _, _ = self.env.step(action)
         if self.step_count != self.max_step and terminal:
-            reward = -10
+            reward = rewards['negative']['CartPole-v1']
+        else: reward = rewards['positive']['CartPole-v1']
         return state, reward, terminal
     
     def reset(self):
