@@ -51,8 +51,8 @@ class MLP(Model):
         return keras.optimizers.Adam(learning_rate=lr)
 
 def A2C_cartpole_train1():
-    start_idx = 0
-    N = 20
+    start_idx = 2
+    N = 18
     for idx in range(start_idx, start_idx + N):
         print(f"{idx}/{N}:")
         a2c = A2C(
