@@ -1,8 +1,8 @@
 from agents.DQN import DQN
+from agents.models import Model
 from envs.gym_env import GymEnv
 
 import tensorflow as tf
-from agents.models import Model, keras
 keras = tf.keras
 layers = keras.layers
 
