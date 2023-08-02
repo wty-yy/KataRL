@@ -40,7 +40,7 @@ def DQN_cartpole():
                 agent_name=f'DQN-{batch_size}',
                 model=MLP(),
                 env=GymEnv(name="CartPole-v1", render_mode="rgb_array"),
-                verbose=False, agent_id=idx, episodes=1000, load_id=None,
+                verbose=False, agent_id=idx, episodes=1000,
                 batch_size=batch_size
             )
             dqn.train()

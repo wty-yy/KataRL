@@ -1,4 +1,4 @@
-from run.DQN.cartpole import DQN_test
+from run.DQN.cartpole import DQN_cartpole
 
 if  __name__ == '__main__':
-    DQN_test()
+    DQN_cartpole()
