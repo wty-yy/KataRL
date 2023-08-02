@@ -10,24 +10,7 @@ Hyper parameters test:
 lr_v: lr of value_model
 lr_p: lr of policy_model
 
-Adam:
- test |  lr_v  |  lr_p  |         result                     |
-------|--------|--------|------------------------------------|
-  1   |  1e-3  |  1e-3  |  bad, step almost zeros            |
-  2   |  1e-3  |  1e-4  |  ok, could get 500 step            |
-  3   |  1e-4  |  1e-4  |  bad, get bad value eval (big var) |
-  4   |  1e-3  |  1e-5  |  good, get the stable step at 500  |
-need more test in 2,4
-
-SGD:
- test |  lr_v  |  lr_p  |         result                     |
-------|--------|--------|------------------------------------|
-  1   |  5e-3  |  1e-5  |  bad, step always small            |
-  2   |  5e-3  |  1e-4  |  soso, step small, value around 15 |
-  3   |  5e-4  |  1e-4  |  soso, step small, value around 15 |
-problem test 1,2: when step is hight,
-it got a very big negative value and then drop in lower than 
-10 at next episode, why?
+Diff model
 
 '''
 
@@ -53,8 +36,9 @@ class MLP(Model):
     
     def build_model(self) -> Model:
         inputs = layers.Input(shape=(4,), name='State')
-        x = layers.Dense(32, activation='relu', name='Dense1')(inputs)
-        x = layers.Dense(32, activation='relu', name='Dense2')(x)
+        x = layers.Dense(128, activation='relu', name='Dense1')(inputs)
+        x = layers.Dense(64, activation='relu', name='Dense2')(x)
+        x = layers.Dense(16, activation='relu', name='Dense3')(x)
         if self.is_value_model:
             outputs = layers.Dense(1, name='State-Value')(x)
         else:  # is policy model
@@ -66,13 +50,13 @@ class MLP(Model):
     def build_optimizer(self, lr) -> keras.optimizers.Optimizer:
         return keras.optimizers.Adam(learning_rate=lr)
 
-def A2C_cartpole_train():
+def A2C_cartpole_train1():
     start_idx = 0
     N = 20
     for idx in range(start_idx, start_idx + N):
         print(f"{idx}/{N}:")
         a2c = A2C(
-            agent_name='A2C-Adam-v3-p5-r20',
+            agent_name='A2C-Adam-v3-p5-r20-deeper',
             value_model=MLP(
                 name='value-model', is_value_model=True,
                 lr=1e-3
@@ -86,7 +70,7 @@ def A2C_cartpole_train():
         )
         a2c.train()
 
-def A2C_cartpole_eval(agent_id, load_id, episodes=10):
+def A2C_cartpole_eval1(agent_id, load_id, episodes=10):
     a2c = A2C(
         agent_name='A2C',
         value_model=MLP(
