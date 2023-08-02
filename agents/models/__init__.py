@@ -59,8 +59,6 @@ class Model:
         pass
 
     def __call__(self, X):
-        if isinstance(X, list):
-            X = tf.constant(X)
         return self.model(X)
     
     def save_weights(self):
