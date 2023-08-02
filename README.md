@@ -18,6 +18,7 @@ To be adding 待添加：
 Available models includes 当前包含模型：
 
 - DQN (Deep Q-Learning Network)
+- A2C (Advantage Actor-Critic)
 
 Tried environment 尝试过的环境：
 
@@ -30,13 +31,13 @@ In order to read the python path, the main program must be run in the root direc
 为了能够读取路径，必须在根目录下运行主程序，从主程序中调用算法测试，例如：
 
 ```shell
-python main.py
+python main.py  # /main.py
 
-# main.py
-# from run.DQN.cartpole import DQN_test  # Your test model
+# In 'main.py':
+# from run.DQN.cartpole import DQN_cartpole  # Your test model
 # 
 # if  __name__ == '__main__':
-#     DQN_test()
+#     DQN_cartpole()
 ```
 
 **Frame function example 框架功能栗子：**
@@ -44,14 +45,15 @@ python main.py
 - Train the Agent in the specified training environment. 在指定的训练环境下训练智能体。
 
   ```python
-  dqn = DQN(
-      agent_name=f'DQN-4',
-      model=MLP(),
-      env=GymEnv(name="CartPole-v1", render_mode="rgb_array"),
-      verbose=False, agent_id=idx, episodes=1000, load_id=None,
-      batch_size=4
-  )
-  dqn.train()
+  def DQN_cartpole:  # /run/DQN/cartpole.py
+      dqn = DQN(
+          agent_name=f'DQN-4',
+          model=MLP(),
+          env=GymEnv(name="CartPole-v1", render_mode="rgb_array"),
+          verbose=False, agent_id=idx, episodes=1000, load_id=None,
+          batch_size=4
+      )
+      dqn.train()
   ```
 
 - Periodically display the training status. 周期性显示训练状态。
