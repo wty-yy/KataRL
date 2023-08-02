@@ -125,6 +125,7 @@ class NameCollection:
         self.names = {'model': [], 'data': [], 'metric': []}
     
     def update(self, key, names):
+        names = sorted(names)
         if len(self.names[key]) < len(names):
             self.names[key] = names
 
