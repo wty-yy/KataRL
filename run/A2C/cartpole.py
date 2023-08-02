@@ -1,3 +1,24 @@
+# -*- coding: utf-8 -*-
+'''
+@File    : A2C/cartpole.py
+@Time    : 2023/08/02 12:49:26
+@Author  : wty-yy
+@Version : 1.0
+@Blog    : https://wty-yy.space/
+@Desc    : Advantage actor-critic on Cartpole environment.
+Hyper parameters test:
+lr_v: lr of value_model
+lr_p: lr of policy_model
+
+ test |  lr_v  |  lr_p  |         result          |
+------|--------|--------|-------------------------|
+  1   |  1e-3  |  1e-3  |  bad, step almost zeros |
+  2   |  1e-3  |  1e-4  |  ok, could get 500 step |
+'''
+
+if __name__ == '__main__':
+    pass
+
 from agents.A2C import A2C
 from agents.models import Model, keras
 from envs.gym_env import GymEnv
@@ -22,22 +43,49 @@ class MLP(Model):
         if self.is_value_model:
             outputs = layers.Dense(1, name='State-Value')(x)
         else:  # is policy model
-            outputs = layers.Dense(2, activation='softmax', name='Action-Proba')(x)
+            outputs = layers.Dense(
+                2, activation='softmax', name='Action-Proba'
+            )(x)
         return keras.Model(inputs, outputs, name=self.name)
     
     def build_optimizer(self, lr) -> keras.optimizers.Optimizer:
-        return keras.optimizers.Adadelta(learning_rate=lr)
+        return keras.optimizers.Adam(learning_rate=lr)
 
-def A2C_cartpole():
-    start_idx = 0
+def A2C_cartpole_train():
+    start_idx = 3
     N = 3
     for idx in range(start_idx, start_idx + N):
         print(f"{idx}/{N}:")
         a2c = A2C(
             agent_name='A2C',
-            value_model=MLP(name='value-model', is_value_model=True),
-            policy_model=MLP(name='policy-model', is_value_model=False),
+            value_model=MLP(
+                name='value-model', is_value_model=True,
+                lr=1e-3
+            ),
+            policy_model=MLP(
+                name='policy-model', is_value_model=False,
+                lr=1e-4
+            ),
             env=GymEnv(name='CartPole-v1', render_mode='rgb_array'),
             verbose=False, agent_id=idx, episodes=1000
         )
         a2c.train()
+
+def A2C_cartpole_eval(agent_id, load_id, episodes=10):
+    a2c = A2C(
+        agent_name='A2C',
+        value_model=MLP(
+            name='value-model', is_value_model=True,
+            load_id=load_id,
+            lr=1e-3
+        ),
+        policy_model=MLP(
+            name='policy-model', is_value_model=False,
+            load_id=load_id,
+            lr=1e-4
+        ),
+        env=GymEnv(name='CartPole-v1', render_mode='rgb_array'),
+        verbose=True, agent_id=agent_id, episodes=episodes
+    )
+    a2c.evaluate()
+    

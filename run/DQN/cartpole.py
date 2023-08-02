@@ -30,7 +30,7 @@ args = {
 }
 
 # DQN test on cartpole
-def DQN_cartpole():
+def DQN_cartpole_train():
     start_idx = 0
     N = 3
     for batch_size in args['batch_size']:
@@ -44,5 +44,16 @@ def DQN_cartpole():
                 batch_size=batch_size
             )
             dqn.train()
+
+def DQN_cartpole_eval(agent_id, load_id, batch_size, episodes=10):
+    dqn = DQN(
+        agent_name=f'DQN-{batch_size}',
+        model=MLP(load_id=load_id),
+        env=GymEnv(name="CartPole-v1", render_mode="rgb_array"),
+        verbose=True, agent_id=agent_id, episodes=episodes,
+        batch_size=batch_size
+    )
+    dqn.epsilon = 0
+    dqn.evaluate()
 
 # call in DQN_cartpole() '/main.py'

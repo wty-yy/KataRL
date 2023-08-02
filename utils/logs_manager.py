@@ -133,8 +133,13 @@ def reset_xticks(ax:plt.Axes, min=None, max=None):
     if min is None: min = xticks.min()
     if max is None: max = xticks.max()
     xticks = xticks[(xticks >= min) & (xticks <= max)]
-    xticks = np.unique(np.r_[min,xticks,max])
+    xticks = list(np.unique(np.r_[min,xticks,max]))
     ax.set_xlim(left=min, right=max)
+    tmp = xticks.copy()
+    for i in range(len(tmp)-1):
+        delta = tmp[i+1] - tmp[i]
+        if delta < tmp[i+1] / 10:
+            xticks.remove(tmp[i])
     ax.set_xticks(xticks)
 
 class PlotRange:
@@ -156,8 +161,11 @@ class PlotRange:
         self.update(range.min, range.max)
     
     def set_ax(self, ax:plt.Axes):
-        max = self.max + 10 - self.max % 10
-        min = self.min - self.min % 10
+        min, max = self.min, self.max
+        if min % 10 != 0:
+            min -= self.min % 10
+        if max % 10 != 0:
+            max += 10 - self.max % 10
         reset_xticks(ax, min, max)
 
     def __repr__(self) -> str:
@@ -202,6 +210,7 @@ class LogsManager:
                  |        |        |        |
             ...  |  ...   |  ...   |  ...   |  ...
                  |        |        |        |
+                 -----------------------------------
         -   Merge data plot (merge_data=True):
             Plot figures in 1xc, c=len(metric_names)
 
@@ -211,6 +220,7 @@ class LogsManager:
                     |        |        |        |
             merge_d |  fig1  |  fig2  |  fig3  |  ...
                     |        |        |        |
+                    -----------------------------------
             where, 'merge_d' is the 95% confidence interval from
             'data_names' (plot by sns.lineplot)
 
@@ -264,16 +274,19 @@ class LogsManager:
     
     def plot_sparse(self, axs, data_names, metric_names, model_names, **kwargs):
         for i, data_name in enumerate(data_names):
+            range = PlotRange()
             for j, metric_name in enumerate(metric_names):
+                range.reset()
                 ax = axs[i, j]
                 for model_name in model_names:
-                    self.painters[model_name].plot(ax, data_name, metric_name, **kwargs)
+                    self.painters[model_name].plot(ax, data_name, metric_name, range, **kwargs)
                 ax.set_title(f"{data_name} {metric_name}")
                 ax.grid(True, ls='--', alpha=0.5)
-                ax.set_xlim(left=0)
-                if metric_name in LEGEND_LOC.keys():
-                    ax.legend(loc=LEGEND_LOC[metric_name])
-                else: ax.legend()
+                range.set_ax(ax)
+                # if metric_name in LEGEND_LOC.keys():
+                #     ax.legend(loc=LEGEND_LOC[metric_name])
+                # else: ax.legend()
+                ax.legend()
     
     def plot_merge_data(self, axs, data_names, metric_names, model_names, **kwargs):
         # update model data frame first
@@ -289,9 +302,10 @@ class LogsManager:
             ax.set_title(f"{metric_name}")
             ax.grid(True, ls='--', alpha=0.5)
             range.set_ax(ax)
-            if metric_name in LEGEND_LOC.keys():
-                ax.legend(loc=LEGEND_LOC[metric_name])
-            else: ax.legend()
+            # if metric_name in LEGEND_LOC.keys():
+            #     ax.legend(loc=LEGEND_LOC[metric_name])
+            # else: ax.legend()
+            ax.legend()
     
 class ModelLogsPainter:
     """
@@ -318,8 +332,8 @@ class ModelLogsPainter:
                 self.painters[f.name] = painter
         self.name_collection.update('data', data_names)
     
-    def plot(self, ax, data_name, metric_name, **kwargs):
-        self.painters[data_name].plot(ax, metric_name, **kwargs)
+    def plot(self, ax, data_name, metric_name, range, **kwargs):
+        self.painters[data_name].plot(ax, metric_name, range, **kwargs)
     
     def get_dataframe(self, data_names):
         self.df = None
@@ -397,7 +411,7 @@ default by 1")
             self.logs[key] += value
         self.epoch_counts.append(len(value) // epoch_size)
     
-    def plot(self, ax, metric_name, **kwargs):
+    def plot(self, ax, metric_name, range:PlotRange, **kwargs):
         x = []
         now = 0
         for size, count in zip(self.epoch_sizes, self.epoch_counts):
@@ -407,6 +421,8 @@ default by 1")
         if ndim != 1:
             raise Exception(f"Error: Could not plot {self.model_name}-{self.data_name}-{metric_name} since it's ndim={ndim} not 1")
         ax.plot(x, self.logs[metric_name], label=self.model_name, **kwargs)
+        not_nan = ~np.isnan(np.array(self.logs[metric_name], dtype='float32'))
+        range.update(min=x[not_nan].min(), max=x[not_nan].max())
     
     def to_df(self):
         return pd.DataFrame(self.logs)

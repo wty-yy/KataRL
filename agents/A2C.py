@@ -31,7 +31,8 @@ class A2C(Agent):
             episodes=1000, gamma=gamma,  # constants.A2C
             **kwargs
         ):
-        super().__init__(env, verbose, agent_name, agent_id, episodes, **kwargs)
+        models = [value_model, policy_model]
+        super().__init__(env, verbose, agent_name, agent_id, episodes, models, **kwargs)
         self.value_model, self.policy_model = value_model, policy_model
         self.gamma = gamma
         self.logs = get_logs()
@@ -53,6 +54,20 @@ class A2C(Agent):
             if (episode + 1) % 100 == 0:
                 self.value_model.save_weights()
                 self.policy_model.save_weights()
+    
+    def evaluate(self):
+        for episode in tqdm(range(self.episodes)):
+            self.logs.reset()
+            state = self.env.reset()
+            for step in range(self.env.max_step):
+                action = self.act(state)
+                state_, _, terminal = self.env.step(action)
+                frame = self.env.render() if self.verbose else None
+                self.logs.update(['frame'], [frame])
+                state = state_
+                if terminal: break
+            self.logs.update(['episode', 'step'], [episode, step])
+            self.update_history()
     
     def act(self, state):
         state = expand_dim(state)

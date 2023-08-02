@@ -98,7 +98,18 @@ class DQN(Agent):
                 self.model.save_weights()
 
     def evaluate(self):
-        pass
+        for episode in tqdm(range(self.episodes)):
+            self.logs.reset()
+            state = self.env.reset()
+            for step in range(self.env.max_step):
+                action = self.act(state)
+                state_, _, terminal = self.env.step(action)
+                frame = self.env.render() if self.verbose else None
+                self.logs.update(['frame'], [frame])
+                state = state_
+                if terminal: break
+            self.logs.update(['episode', 'step'], [episode, step])
+            self.update_history()
 
     def act(self, state):  # epsilon choice policy
         rand = np.random.rand()
