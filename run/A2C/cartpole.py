@@ -10,10 +10,13 @@ Hyper parameters test:
 lr_v: lr of value_model
 lr_p: lr of policy_model
 
- test |  lr_v  |  lr_p  |         result          |
-------|--------|--------|-------------------------|
-  1   |  1e-3  |  1e-3  |  bad, step almost zeros |
-  2   |  1e-3  |  1e-4  |  ok, could get 500 step |
+ test |  lr_v  |  lr_p  |         result                    |
+------|--------|--------|-----------------------------------|
+  1   |  1e-3  |  1e-3  |  bad, step almost zeros           |
+  2   |  1e-3  |  1e-4  |  ok, could get 500 step           |
+  3   |  1e-4  |  1e-4  |  bad, get bad value eval          |
+  4   |  1e-3  |  1e-5  |  good, get the stable step at 500 |
+need more test in 2,4
 '''
 
 if __name__ == '__main__':
@@ -52,7 +55,7 @@ class MLP(Model):
         return keras.optimizers.Adam(learning_rate=lr)
 
 def A2C_cartpole_train():
-    start_idx = 3
+    start_idx = 9
     N = 3
     for idx in range(start_idx, start_idx + N):
         print(f"{idx}/{N}:")
@@ -64,7 +67,7 @@ def A2C_cartpole_train():
             ),
             policy_model=MLP(
                 name='policy-model', is_value_model=False,
-                lr=1e-4
+                lr=1e-5
             ),
             env=GymEnv(name='CartPole-v1', render_mode='rgb_array'),
             verbose=False, agent_id=idx, episodes=1000
