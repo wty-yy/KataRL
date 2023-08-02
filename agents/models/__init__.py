@@ -59,10 +59,12 @@ class Model:
         pass
 
     def __call__(self, X):
+        if isinstance(X, list):
+            X = tf.constant(X)
         return self.model(X)
     
     def save_weights(self):
-        path = PATH.CHECKPOINTS.joinpath(f"{self.save_id:04}")
+        path = PATH.CHECKPOINTS.joinpath(f"{self.name}-{self.save_id:04}")
         self.model.save_weights(path)
         self.save_id += 1
     
