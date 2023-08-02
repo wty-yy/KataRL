@@ -45,5 +45,4 @@ def DQN_cartpole():
             )
             dqn.train()
 
-if  __name__ == '__main__':
-    DQN_test()
+# call in DQN_cartpole() '/main.py'
