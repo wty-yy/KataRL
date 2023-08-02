@@ -68,7 +68,8 @@ class DQN(Agent):
             start_fit_size=start_fit_size,  # constant.DQN
             **kwargs
         ):
-        super().__init__(env, verbose, agent_name, agent_id, episodes, **kwargs)
+        models = [model]
+        super().__init__(env, verbose, agent_name, agent_id, episodes, models, **kwargs)
         self.model = model
         self.loss_fn = keras.losses.MeanSquaredError()
         self.logs = get_logs()

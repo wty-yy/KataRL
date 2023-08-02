@@ -30,17 +30,21 @@ class Agent:
     def __init__(
             self, env:Env=None, verbose=False,
             agent_name=None, agent_id=0,
-            episodes=None, **kwargs
+            episodes=None, models:list=None, **kwargs
         ):
         self.env, self.verbose, self.agent_name, self.agent_id, \
-            self.episodes = \
+            self.episodes, self.models = \
             env, verbose, agent_name, agent_id, \
-            episodes
+            episodes, models
         self.timestr = get_time_str()
 
-        # setting logs path early, since history will use PATH.HISTORY
+        # setting logs path early,
+        # since history and load_weights will
+        # use PATH.HISTORY and PATH.CHECKPOINTS
         PATH.get_logs_path(self.agent_name, self.agent_id)
 
+        for model in models:
+            model.load_weights()
         _ = (self.agent_name, self.agent_id, self.timestr)
         self.best_episode = History(*_, "best", type='npy')
         self.history = History(*_, "history", type='json')

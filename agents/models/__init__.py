@@ -43,7 +43,6 @@ class Model:
         self.model = self.build_model()
         self.optimizer = self.build_optimizer(self.lr)
         if self.load_id is not None:
-            self.load_weights()
             self.save_id = self.load_id + 1
         if verbose: self.plot_model()
 
@@ -67,7 +66,8 @@ class Model:
         self.save_id += 1
     
     def load_weights(self):
-        path = PATH.CHECKPOINTS.joinpath(f"{self.load_id:04}")
+        if self.load_id is None: return
+        path = PATH.CHECKPOINTS.joinpath(f"{self.name}-{self.load_id:04}")
         print(f"Load weight from '{path.absolute()}'")
         self.model.load_weights(path)
     
