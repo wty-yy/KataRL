@@ -245,7 +245,7 @@ class LogsManager:
         if data_names is None: data_names = self.name_collection.names['data']
         if metric_names is None: metric_names = self.name_collection.names['metric']
         if model_names is None: model_names = self.name_collection.names['model']
-        if merge_data:
+        if 'episode' in metric_names:
             metric_names.remove('episode')
         r = len(data_names)
         c = len(metric_names)

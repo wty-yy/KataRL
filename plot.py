@@ -31,7 +31,7 @@ class PlotManager:
     def plot_logs(self, verbose=True):
         self.logs_manager.plot(
             data_names=self.data_names,
-            metric_names=['step', 'q_value', 'loss'],
+            # metric_names=['step', 'q_value', 'loss'],
             to_file=self.save_path.joinpath(f"{self.fname}.png"),
             merge_data=self.merge_data,
             alpha=0.5,
