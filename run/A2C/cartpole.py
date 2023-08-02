@@ -10,13 +10,23 @@ Hyper parameters test:
 lr_v: lr of value_model
 lr_p: lr of policy_model
 
- test |  lr_v  |  lr_p  |         result                    |
-------|--------|--------|-----------------------------------|
-  1   |  1e-3  |  1e-3  |  bad, step almost zeros           |
-  2   |  1e-3  |  1e-4  |  ok, could get 500 step           |
-  3   |  1e-4  |  1e-4  |  bad, get bad value eval          |
-  4   |  1e-3  |  1e-5  |  good, get the stable step at 500 |
+Adam:
+ test |  lr_v  |  lr_p  |         result                     |
+------|--------|--------|------------------------------------|
+  1   |  1e-3  |  1e-3  |  bad, step almost zeros            |
+  2   |  1e-3  |  1e-4  |  ok, could get 500 step            |
+  3   |  1e-4  |  1e-4  |  bad, get bad value eval (big var) |
+  4   |  1e-3  |  1e-5  |  good, get the stable step at 500  |
 need more test in 2,4
+
+SGD:
+ test |  lr_v  |  lr_p  |         result                     |
+------|--------|--------|------------------------------------|
+  1   |  5e-3  |  1e-5  |  bad, step always small            |
+  2   |  5e-3  |  1e-4  |  soso, step small, value around 15 |
+problem: when step is hight, it got a very big negative value
+and then drop in lower than 10 at next episode, why?
+
 '''
 
 if __name__ == '__main__':
@@ -55,8 +65,8 @@ class MLP(Model):
         return keras.optimizers.Adam(learning_rate=lr)
 
 def A2C_cartpole_train():
-    start_idx = 9
-    N = 3
+    start_idx = 0
+    N = 20
     for idx in range(start_idx, start_idx + N):
         print(f"{idx}/{N}:")
         a2c = A2C(
@@ -80,12 +90,10 @@ def A2C_cartpole_eval(agent_id, load_id, episodes=10):
         value_model=MLP(
             name='value-model', is_value_model=True,
             load_id=load_id,
-            lr=1e-3
         ),
         policy_model=MLP(
             name='policy-model', is_value_model=False,
             load_id=load_id,
-            lr=1e-4
         ),
         env=GymEnv(name='CartPole-v1', render_mode='rgb_array'),
         verbose=True, agent_id=agent_id, episodes=episodes
