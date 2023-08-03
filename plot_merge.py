@@ -31,7 +31,7 @@ def load_parse():
         model_names = []
         for model_name in logs_path.iterdir():
             if not model_name.is_dir(): continue
-            model_names.append(model_name)
+            model_names.append(model_name.name)
         warnings.warn("\
 Warning: The model_names is None,\
 it will plot all the model under the logs path")
