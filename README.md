@@ -78,7 +78,7 @@ python main.py  # /main.py
   python plot_merge.py -p "train-logs/DQN-logs" -m "DQN-1" "DQN-2" "DQN-6" "DQN-16" -a 0.5 -dpi 300
   ```
 
-  ![DQN](archives/figures/DQN/cartpole/DQN-batch-1-2-6-16.png)
+  ![DQN](archives/algorithms/DQN/cartpole/DQN-batch-1-2-6-16.png)
 
 
 ### Test 测试结果
