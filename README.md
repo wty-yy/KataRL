@@ -19,8 +19,8 @@ To be adding 待添加：
 
 Available models includes 当前包含模型：
 
-- DQN (Deep Q-Learning Network) [[info & env test 算法介绍及测试结果](archives/algorithms/DQN/DQN.md)]
-- A2C (Advantage Actor-Critic) [[info & env test 算法介绍及测试结果](archives/algorithms/A2C/A2C.md)]
+- DQN (Deep Q-Learning Network) [[info & env test 算法介绍及测试结果](https://wty-yy.space/posts/42683/)]
+- A2C (Advantage Actor-Critic) [[info & env test 算法介绍及测试结果](https://wty-yy.space/posts/6031/)]
 
 Tried environment 尝试过的环境：
 
