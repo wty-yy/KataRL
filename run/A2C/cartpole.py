@@ -24,7 +24,7 @@ SGD:
 ------|--------|--------|------------------------------------|
   1   |  5e-3  |  1e-5  |  bad, step always small            |
   2   |  5e-3  |  1e-4  |  soso, step small, value around 15 |
-  3   |  5e-4  |  1e-4  |  soso, step small, value around 15 |
+  3   |  5e-4  |  1e-4  |  good, could get 500 step          |
 problem test 1,2: when step is hight,
 it got a very big negative value and then drop in lower than 
 10 at next episode, why?
