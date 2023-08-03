@@ -13,11 +13,13 @@ class PlotManager:
     def __init__(
             self, load_paths:Path, save_path:Path, fname,
             model_names, data_names, metric_names, merge_data=False,
+            alpha=0.5
         ):
         self.load_paths, self.save_path, self.fname, \
-        self.model_names, self.data_names, self.metric_names, self.merge_data = \
+        self.model_names, self.data_names, self.metric_names, \
+        self.merge_data, self.alpha = \
             load_paths, save_path, fname, \
-            model_names, data_names, metric_names, merge_data
+            model_names, data_names, metric_names, merge_data, alpha
         self.logs_manager = LogsManager()
     
     def get_names(self):
@@ -34,7 +36,7 @@ class PlotManager:
             # metric_names=['step', 'q_value', 'loss'],
             to_file=self.save_path.joinpath(f"{self.fname}.png"),
             merge_data=self.merge_data,
-            alpha=0.5,
+            alpha=self.alpha,
         )
         plt.close()
         if verbose:
@@ -55,7 +57,7 @@ class PlotManager:
         print("start convert to gif...")
         save_frames_as_gif(logs['frame'], self.fname, self.save_path)
 
-def get_plot_manager(model_names, idxs=None, merge_data=False) -> PlotManager:
+def get_plot_manager(model_names, idxs=None, merge_data=False, alpha=0.5) -> PlotManager:
     timestamp = get_time_str()
     data_names = None if idxs is None else [f"history-{idx:04}" for idx in idxs]
     load_paths = [PATH.LOGS.joinpath(model_name) for model_name in model_names]
@@ -67,6 +69,7 @@ def get_plot_manager(model_names, idxs=None, merge_data=False) -> PlotManager:
         data_names=data_names,
         metric_names=['step', 'q_value', 'loss'],
         merge_data=merge_data,
+        alpha=alpha,
     )
     print(plot_manager.get_names())
     return plot_manager
@@ -79,12 +82,13 @@ def load_parse():
     parser.add_argument('-pf', '--plot-frame', action='store_true', help="Plot the frames from file (bool)")
     parser.add_argument('-ff', '--frame-file', type=str, help="The frame file path (str)")
     parser.add_argument('--merge', action='store_true', help="Plot the data after merge")
+    parser.add_argument('-a', '--alpha', default=0.5, type=float, help="Alpha of figure")
     args = parser.parse_args()
-    if args.id is False and args.merge is False:
+    if args.id is None and args.merge is False:
         warnings.warn("The id is 'None' and merge is False, so you want plot all data?")
     print(args)
 
-    plot_manager = get_plot_manager(args.model, args.id, args.merge)
+    plot_manager = get_plot_manager(args.model, args.id, args.merge, args.alpha)
     if args.plot_cycle:
         plot_manager.plot_cycle()
     else:
