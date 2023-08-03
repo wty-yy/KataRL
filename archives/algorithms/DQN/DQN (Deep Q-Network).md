@@ -48,7 +48,7 @@ Training process 训练流程：
 1. Random a batch of 5-tuple from memory $(s,a,r,s',t)\in M$ .
 2. **TD target**: $\hat{y} = r + \gamma \max\limits_aq(s',a;w)$ .
 3. Loss: $\mathcal{L}(w)=\frac{1}{2}||q(s,a;w)-\hat{y}||_2^2 = \frac{1}{2}||\delta||_2^2$ where $\delta = q(s,a;w) - \hat{y}$ is **TD error**.
-4. Update: $w\gets w-\alpha\frac{\partial\mathcal{L}(w)}{\partial w} = w - \alpha\delta\nabla_wQ(s,a;w)$ .
+4. Update: $w\gets w-\alpha\frac{\partial\mathcal{L}(w)}{\partial w} = w - \alpha\delta\cdot\nabla_wQ(s,a;w)$ .
 
 ## Environment test 环境测试
 
@@ -57,6 +57,8 @@ Training process 训练流程：
 [Cartpole environment information - Gymnasium](https://gymnasium.farama.org/environments/classic_control/cart_pole/)
 
 #### Hyper-parameters 超参数
+
+**Agent**
 
 1. model optimizer: Adam, learning rate $lr = 10^{-3}$
 
@@ -67,7 +69,12 @@ Training process 训练流程：
 5. start fit size $10^4$
 6. batch size $[1,2,3,4,6,8,16]$
 
-#### 测试结果1
+**Environment**
+
+1. positive reward $r_{pos} = 1$
+2. negative reward $r_{neg} = -10$
+
+#### Test result 1 测试结果1
 
 We test different batch size, interestingly, only small batch size can reach the maximum number of steps (500 steps): 
 
@@ -75,7 +82,7 @@ We test different batch size, interestingly, only small batch size can reach the
 
 ![batch-1-6-16](cartpole/DQN-batch-1-6-16.png)
 
-#### 测试结果2
+#### Test result 2 测试结果2
 
 Following figures is average of multi-test with means and 95% confidence range (each test reset 30 times)
 
