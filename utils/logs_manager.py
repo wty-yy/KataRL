@@ -16,9 +16,10 @@ IGNORE_DATANAME = [
     r"^best", # best episode data
 ]
 LEGEND_LOC = {
-    "step": "upper left",
+    # "step": "upper left",
     "q_value": "lower right",
-    "loss": "upper right",
+    "v_value": "lower right",
+    # "loss": "upper right",
 }
 
 def is_ignore_data(name):
@@ -125,9 +126,13 @@ class NameCollection:
         self.names = {'model': [], 'data': [], 'metric': []}
     
     def update(self, key, names):
-        names = sorted(names)
-        if len(self.names[key]) < len(names):
+        if self.names.get(key) is None:
             self.names[key] = names
+        else:
+            for name in names:
+                if name not in self.names[key]:
+                    self.names[key].append(name)
+        self.names[key] = sorted(self.names[key])
 
 def reset_xticks(ax:plt.Axes, min=None, max=None):
     xticks = np.array(ax.get_xticks())
@@ -284,10 +289,10 @@ class LogsManager:
                 ax.set_title(f"{data_name} {metric_name}")
                 ax.grid(True, ls='--', alpha=0.5)
                 range.set_ax(ax)
-                # if metric_name in LEGEND_LOC.keys():
-                #     ax.legend(loc=LEGEND_LOC[metric_name])
-                # else: ax.legend()
-                ax.legend()
+                if metric_name in LEGEND_LOC.keys():
+                    ax.legend(loc=LEGEND_LOC[metric_name])
+                else: ax.legend()
+                # ax.legend()
     
     def plot_merge_data(self, axs, data_names, metric_names, model_names, **kwargs):
         # update model data frame first
@@ -303,10 +308,10 @@ class LogsManager:
             ax.set_title(f"{metric_name}")
             ax.grid(True, ls='--', alpha=0.5)
             range.set_ax(ax)
-            # if metric_name in LEGEND_LOC.keys():
-            #     ax.legend(loc=LEGEND_LOC[metric_name])
-            # else: ax.legend()
-            ax.legend()
+            if metric_name in LEGEND_LOC.keys():
+                ax.legend(loc=LEGEND_LOC[metric_name])
+            else: ax.legend()
+            # ax.legend()
     
 class ModelLogsPainter:
     """
@@ -334,11 +339,19 @@ class ModelLogsPainter:
         self.name_collection.update('data', data_names)
     
     def plot(self, ax, data_name, metric_name, range, **kwargs):
+        if self.painters.get(data_name) is None:
+            warnings.warn(f"Warning: \
+Model '{self.name}' don't have data '{data_name}', skip plot it.")
+            return
         self.painters[data_name].plot(ax, metric_name, range, **kwargs)
     
     def get_dataframe(self, data_names):
         self.df = None
         for data_name in data_names:
+            if self.painters.get(data_name) is None:
+                warnings.warn(f"Warning: \
+Model '{self.name}' don't have data '{data_name}', skip merge it.")
+                continue
             painter = self.painters[data_name]
             if self.df is None: self.df = painter.to_df()
             else: self.df = pd.concat([self.df, painter.to_df()]).reset_index(drop=True)
@@ -413,6 +426,11 @@ default by 1")
         self.epoch_counts.append(len(value) // epoch_size)
     
     def plot(self, ax, metric_name, range:PlotRange, **kwargs):
+        if self.logs.get(metric_name) is None:
+            warnings.warn(f"Warning: \
+Model '{self.model_name}' data '{self.data_name}' don't have\
+metric '{metric_name}', skip plot it.")
+            return
         x = []
         now = 0
         for size, count in zip(self.epoch_sizes, self.epoch_counts):
