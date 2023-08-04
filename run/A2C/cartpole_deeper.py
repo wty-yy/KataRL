@@ -50,13 +50,13 @@ class MLP(Model):
     def build_optimizer(self, lr) -> keras.optimizers.Optimizer:
         return keras.optimizers.Adam(learning_rate=lr)
 
-def A2C_cartpole_train1():
+def A2C_cartpole_train1(name="A2C-Adam-v3-p5-r20-deeper"):
     start_idx = 0
     N = 20
     for idx in range(start_idx, start_idx + N):
         print(f"{idx}/{N}:")
         a2c = A2C(
-            agent_name='A2C-Adam-v3-p5-r20-deeper',
+            agent_name=name,
             value_model=MLP(
                 name='value-model', is_value_model=True,
                 lr=1e-3
