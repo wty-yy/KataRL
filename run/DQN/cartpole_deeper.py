@@ -13,10 +13,11 @@ class MLP(Model):
 
     def build_model(self):
         inputs = layers.Input(shape=(4,), name='State')
-        x = layers.Dense(32, activation='relu', name='Dense1')(inputs)
-        x = layers.Dense(32, activation='relu', name='Dense2')(x)
+        x = layers.Dense(128, activation='relu', name='Dense1')(inputs)
+        x = layers.Dense(64, activation='relu', name='Dense2')(x)
+        x = layers.Dense(16, activation='relu', name='Dense3')(x)
         outputs = layers.Dense(2, name='Q_Value')(x)
-        return keras.Model(inputs, outputs)
+        return keras.Model(inputs, outputs, name='Q_Value')
     
     def build_optimizer(self, lr):
         return keras.optimizers.Adam(learning_rate=lr)
@@ -30,7 +31,7 @@ args = {
 }
 
 # DQN test on cartpole
-def DQN_cartpole_train(name="DQN-4"):
+def DQN_cartpole_train1(name="DQN-4-deeper"):
     start_idx = 0
     N = 30
     for batch_size in args['batch_size']:
@@ -45,7 +46,7 @@ def DQN_cartpole_train(name="DQN-4"):
             )
             dqn.train()
 
-def DQN_cartpole_eval(agent_id, load_id, batch_size, episodes=10):
+def DQN_cartpole_eval1(agent_id, load_id, batch_size, episodes=10):
     dqn = DQN(
         agent_name=f'DQN-{batch_size}',
         model=MLP(load_id=load_id),
