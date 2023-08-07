@@ -12,24 +12,28 @@ Log name format: `(batch size)-*(negative reward)-*(model struct)`
 
 ### Completed
 
-| Logs | Episodes |
-| ---- | -------- |
-| 1    | 30       |
-| 2    | 30       |
-| 3    | 30       |
-| 4    | 30       |
-| 6    | 30       |
-| 8    | 30       |
-| 16   | 30       |
-|      |          |
-
-### Waited
-
 | Logs        | Episodes |
 | ----------- | -------- |
+| 1           | 30       |
+| 2           | 30       |
+| 3           | 30       |
+| 4           | 30       |
+| 6           | 30       |
+| 8           | 30       |
+| 16          | 30       |
 | 4-20        | 30       |
 | 4-50        | 30       |
 | 4-10-deeper | 30       |
 | 4-20-deeper | 30       |
 | 4-50-deeper | 30       |
+
+### Waited
+
+| Logs | Episodes |
+| ---- | -------- |
+|      |          |
+|      |          |
+|      |          |
+|      |          |
+|      |          |
 
