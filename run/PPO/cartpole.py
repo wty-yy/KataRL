@@ -28,16 +28,20 @@ class MLP(Model):
     def build_optimizer(self, lr):
         return keras.optimizers.Adam(learning_rate=lr)
 
+def build_env():
+    return GymEnv(name='CartPole-v1', render_mode='rgb_array')
+
 def PPO_cartpole_train():
     start_idx = 0
-    N = 1
+    N = 10
     for idx in range(start_idx, start_idx + N):
         print(f"{idx}/{N}:")
         ppo = PPO(
-            env=GymEnv(name='CartPole-v1', render_mode='rgb_array'),
+            env=build_env(), build_env=build_env,
             agent_name='PPO',
-            model=MLP(lr=1e-3),
-            agent_id=idx, iter_M=10
+            model=MLP(lr=3e-4),
+            agent_id=idx, iter_M=200,
+            lambda_=0
         )
         ppo.train()
 

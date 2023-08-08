@@ -69,12 +69,13 @@ class Actor:
             S[step], A[step], R[step], S_[step] = \
                 self.state, action, reward, state_
             self.state = state_
-            self.total_step += 1
-            max_step = max(max_step, self.total_step)
+            # self.total_step += 1
+            # max_step = max(max_step, self.total_step)
+            max_step = max(max_step, self.env.step_count)
             if terminal: self.reset()
         # Calc Advantage Value: D
         D = R + self.gamma * np.r_[D[1:,0],0].reshape(-1,1) - D
-        for i in range(len(D)-2, -1, -1):
+        for i in range(step_T-2, -1, -1):
             D[i,0] += self.gamma * self.lambda_ * D[i+1,0]
         ds = tf.data.Dataset.from_tensor_slices((S,A,R,S_,D))
         return ds, max_step
@@ -84,11 +85,12 @@ class PPO(Agent):
     def __init__(
             self, env: Env = None, verbose=False,
             agent_name='PPO', agent_id=0,
-            episodes=None, models: list = None,
+            episodes=None, 
             model: Model = None,
             gamma=gamma, lambda_=lambda_, epsilon=epsilon,
             actor_N=actor_N, iter_M=iter_M, step_T=step_T,
             epochs=epochs, batch_size=batch_size,
+            build_env=None,
             **kwargs):
         models = [model]
         super().__init__(env, verbose, agent_name, agent_id, episodes, models, **kwargs)
@@ -103,7 +105,7 @@ class PPO(Agent):
         self.copy_weights()
         # init actors
         self.actors = [
-            Actor(self.env, self.model_old, self.gamma, self.lambda_) \
+            Actor(build_env(), self.model_old, self.gamma, self.lambda_) \
             for _ in range(self.actor_N)
         ]
     
@@ -115,6 +117,7 @@ class PPO(Agent):
         for i in tqdm(range(self.iter_M)):
             self.logs.reset()
             max_step = self.fit()
+            self.copy_weights()
             frame = (i+1) * self.iter_M
             self.logs.update(['frame', 'max_step'], [frame, max_step])
             self.update_history()
@@ -139,25 +142,27 @@ class PPO(Agent):
     @tf.function
     def train_step(self, s, a, r, s_, A):
         v_old_s_, _ = self.model_old(s_)
+        # v_old_s_, _ = self.model(s_)
         _, p_old_s = self.model_old(s)
         with tf.GradientTape() as tape:
             v_s, p_s = self.model(s)
             L_v = tf.reduce_mean(tf.square(v_s-r-self.gamma*v_old_s_)/2)
             rate = p_s[a] / p_old_s[a]
+            delta = r+self.gamma*v_old_s_-v_s
             L_clip = tf.reduce_mean(
                 tf.minimum(
-                    rate*A,
+                    rate*delta,
                     tf.clip_by_value(
                         rate,
                         clip_value_min=1-self.epsilon,
                         clip_value_max=1+self.epsilon
-                    )*A
+                    )*delta
                 )
             )
             loss = L_v - L_clip
         grads = tape.gradient(loss, self.model.get_trainable_weights())
         self.model.apply_gradients(grads)
-        return v_s, loss
+        return tf.reduce_mean(v_s), loss
     
     def update_history(self):
         self.best_episode.update_best(
