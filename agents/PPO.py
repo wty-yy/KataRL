@@ -21,7 +21,7 @@ def get_logs() -> Logs:
     )
 
 def expand_dim(state):
-    return np.array(state).reshape(1, -1)
+    return tf.expand_dims(tf.constant(state, dtype='float32'), axis=0)
 
 class Copyer(keras.optimizers.Optimizer):
     
@@ -61,10 +61,10 @@ class Actor:
             np.zeros(shape=(step_T, *state_shape), dtype='float32'), \
             np.zeros(shape=(step_T, 1), dtype='float32')
         max_step = 0
-        for step in step_T:
+        for step in range(step_T):
             v, proba = self.model(expand_dim(self.state))
             D[step] = v[0][0].numpy()
-            action = self.get_action(proba.numpy())
+            action = self.get_action(proba[0].numpy())
             state_, reward, terminal = self.env.step(action)
             S[step], A[step], R[step], S_[step] = \
                 self.state, action, reward, state_
@@ -83,18 +83,19 @@ class PPO(Agent):
 
     def __init__(
             self, env: Env = None, verbose=False,
-            agent_name=None, agent_id=0,
+            agent_name='PPO', agent_id=0,
             episodes=None, models: list = None,
             model: Model = None,
-            gamma=gamma, lambda_=lambda_,
+            gamma=gamma, lambda_=lambda_, epsilon=epsilon,
             actor_N=actor_N, iter_M=iter_M, step_T=step_T,
             epochs=epochs, batch_size=batch_size,
             **kwargs):
         models = [model]
         super().__init__(env, verbose, agent_name, agent_id, episodes, models, **kwargs)
-        self.model, self.gamma, self.lambda_, \
+        self.model, self.gamma, self.lambda_, self.epsilon, \
             self.actor_N, self.iter_M, self.step_T, \
-            self.epochs, self.batch_size = model, gamma, lambda_, \
+            self.epochs, self.batch_size = \
+            model, gamma, lambda_, epsilon,\
             actor_N, iter_M, step_T, epochs, batch_size
         self.logs = get_logs()
         # build old model init as model
@@ -111,7 +112,7 @@ class PPO(Agent):
                                    self.model_old.trainable_weights))
 
     def train(self):
-        for i in range(self.iter_M):
+        for i in tqdm(range(self.iter_M)):
             self.logs.reset()
             max_step = self.fit()
             frame = (i+1) * self.iter_M
@@ -122,13 +123,41 @@ class PPO(Agent):
     
     def fit(self):
         ds = None
+        max_step = 0
         for actor in self.actors:
-            ds_new = actor.act(self.step_T)
+            ds_new, step = actor.act(self.step_T)
             ds = ds_new if ds is None else ds.concatenate(ds_new)
-        ds = ds.shuffle(10000).batch(self.batch_size)
-        for epoch in self.epochs:
+            max_step = max(max_step, step)
+        ds = ds.shuffle(1000).batch(self.batch_size)
+        for _ in range(self.epochs):
             for s, a, r, s_, A in ds:
-                a = make_onehot(a, depth=self.env.action_shape[0])
+                a = make_onehot(a.numpy(), depth=self.env.action_size).astype('bool')
+                value, loss = self.train_step(s, a, r, s_, A)
+                self.logs.update(['v_value', 'loss'], [value, loss])
+        return max_step
+    
+    @tf.function
+    def train_step(self, s, a, r, s_, A):
+        v_old_s_, _ = self.model_old(s_)
+        _, p_old_s = self.model_old(s)
+        with tf.GradientTape() as tape:
+            v_s, p_s = self.model(s)
+            L_v = tf.reduce_mean(tf.square(v_s-r-self.gamma*v_old_s_)/2)
+            rate = p_s[a] / p_old_s[a]
+            L_clip = tf.reduce_mean(
+                tf.minimum(
+                    rate*A,
+                    tf.clip_by_value(
+                        rate,
+                        clip_value_min=1-self.epsilon,
+                        clip_value_max=1+self.epsilon
+                    )*A
+                )
+            )
+            loss = L_v - L_clip
+        grads = tape.gradient(loss, self.model.get_trainable_weights())
+        self.model.apply_gradients(grads)
+        return v_s, loss
     
     def update_history(self):
         self.best_episode.update_best(

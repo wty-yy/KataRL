@@ -1,5 +1,6 @@
 gamma = 0.99  # discount rate
 lambda_ = 0.95  # GAE parameter
+epsilon = 0.2  # clip epsilon
 actor_N = 8  # Actor number
 iter_M = 100  # Total iteration
 step_T = 128  # move steps
