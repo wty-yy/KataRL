@@ -136,7 +136,7 @@ class DQN(Agent):
         if self.memory.count < self.start_fit_size: return None, None
         s, a, r, s_, t = self.memory.sample(self.batch_size)
         r, t = r.squeeze(), t.squeeze()
-        a_onehot = make_onehot(a, depth=2).astype('bool')
+        a_onehot = make_onehot(a, depth=self.env.action_shape[0]).astype('bool')
 
         td_target = r + gamma * np.max(self.model(s_), axis=-1) * (1-t)
         q_state = self.model(s)
