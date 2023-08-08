@@ -19,11 +19,12 @@ class Env():
     
     def __init__(
             self, name, seed=None, max_step=None,
-            state_shape=None, action_shape=None, **kwargs
+            state_shape=None, action_shape=None,
+            action_size=None, **kwargs
         ):
         self.name, self.seed, self.max_step = name, seed, max_step
-        self.state_shape, self.action_shape = \
-            state_shape, action_shape
+        self.state_shape, self.action_shape, self.action_size = \
+            state_shape, action_shape, action_size
     
     def step(self, action):
         """

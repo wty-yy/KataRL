@@ -11,6 +11,9 @@ state_shape = {
 action_shape = {
     "CartPole-v1": (1,)
 }
+action_size = {
+    "CartPole-v1": 2
+}
 rewards = {
     "positive": {
         "CartPole-v1": 1,
@@ -32,6 +35,8 @@ class GymEnv(Env):
             raise Exception(f"Don't know the state_shape of the environment: '{name}'")
         if action_shape.get(name) is None:
             raise Exception(f"Don't know the action_shape of the environment: '{name}'")
+        if action_size.get(name) is None:
+            raise Exception(f"Don't know the action_size of the environment: '{name}'")
         if rewards['positive'].get(name) is None:
             raise Exception(f"Don't know the positive reward of the environment: '{name}'")
         if rewards['negative'].get(name) is None:
@@ -42,6 +47,7 @@ class GymEnv(Env):
             max_step=max_step[name],
             state_shape=state_shape[name],
             action_shape=action_shape[name],
+            action_size=action_size[name],
             **kwargs
         )
         if seed is not None: kwargs['seed'] = seed
