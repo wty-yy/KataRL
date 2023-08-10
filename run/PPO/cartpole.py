@@ -1,4 +1,5 @@
 from agents.PPO import PPO
+from agents.constants.PPO import actor_N
 from agents.models import Model, keras
 from envs.gym_env import GymEnv
 import tensorflow as tf
@@ -37,13 +38,22 @@ def PPO_cartpole_train():
     for idx in range(start_idx, start_idx + N):
         print(f"{idx}/{N}:")
         ppo = PPO(
-            env=build_env(), build_env=build_env,
+            env=GymEnv(name='CartPole-v1', num_envs=actor_N),
             agent_name='PPO',
             model=MLP(lr=3e-4),
-            agent_id=idx, iter_M=200,
-            lambda_=0
+            agent_id=idx
         )
         ppo.train()
 
-
-
+def PPO_cartpole_eval(agent_id, load_id, frames_M=int(1e4)):
+    ppo = PPO(
+        env=GymEnv(
+            name='CartPole-v1', num_envs=actor_N,
+            capture_video=True
+        ),
+        agent_name='PPO',
+        model=MLP(lr=3e-4, load_id=load_id),
+        agent_id=agent_id,
+        frames_M=frames_M
+    )
+    ppo.evaluate()

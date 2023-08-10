@@ -1,8 +1,8 @@
 gamma = 0.99  # discount rate
 lambda_ = 0.95  # GAE parameter
 epsilon = 0.2  # clip epsilon
-actor_N = 8  # Actor number
-iter_M = 100  # Total iteration
+actor_N = 4  # Actor number > 1
+frames_M = int(2e4)  # Total frames
 step_T = 128  # move steps
 epochs = 10  # train epochs
 batch_size = 32

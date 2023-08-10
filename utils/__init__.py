@@ -3,6 +3,8 @@ General functions:
 
 -   make_onehot(x, depth): Convert x to one-hot vectors with depth.
 
+-   sample_from_proba(proba): Sample indexs from the 'proba'.
+
 -   get_time_str(): Return current datetime by str.
 
 -   'json', 'npy' file save/read:
@@ -21,6 +23,10 @@ def make_onehot(x:np.ndarray, depth=None):
     ret = np.zeros((x.size, depth))
     ret[np.arange(x.size), x] = 1
     return ret
+
+def sample_from_proba(proba):
+    choice = lambda p: np.random.choice(len(p), 1, p=p)[0]
+    return np.apply_along_axis(choice, axis=1, arr=proba).astype('int32')
 
 def get_time_str():
     return datetime.now().strftime(r"%Y%m%d-%H%M%S")
