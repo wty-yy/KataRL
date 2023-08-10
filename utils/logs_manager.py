@@ -1,6 +1,7 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import re, warnings, tensorflow
+from matplotlib.ticker import ScalarFormatter
 
 def custom_warning_message(message, category, filename, lineno, file=None, line=None):
         return '%s, line %s,\n%s\n\n' % (filename, lineno, message)
@@ -21,6 +22,11 @@ LEGEND_LOC = {
     "v_value": "lower right",
     # "loss": "upper right",
 }
+
+# x axis metric name, priority by the idx order
+X_METRIC_NAMES = [
+    'episode', 'frame'
+]
 
 def is_ignore_data(name):
     for s in IGNORE_DATANAME:
@@ -133,6 +139,19 @@ class NameCollection:
                 if name not in self.names[key]:
                     self.names[key].append(name)
         self.names[key] = sorted(self.names[key])
+    
+    def get_x_metric_name(self):
+        for x_metric in X_METRIC_NAMES:
+            if x_metric in self.names['metric']:
+                return x_metric
+        raise Exception(f"\
+Error: Don't know the X metric name!\n\
+Current metrics: {self.names['metric']}")
+    
+    def get_metric_names(self):
+        ret = self.names['metric'].copy()
+        ret.remove(self.get_x_metric_name())
+        return ret
 
 def reset_xticks(ax:plt.Axes, min=None, max=None):
     xticks = np.array(ax.get_xticks())
@@ -176,6 +195,10 @@ class PlotRange:
 
     def __repr__(self) -> str:
         return f"<type=PlotRange, value={(self.min, self.max)}>"
+
+class MyScalarFormatter(ScalarFormatter):
+    def _set_format(self):
+        self.format = "%1.2f"
 
 class LogsManager:
     """
@@ -259,10 +282,8 @@ class LogsManager:
             **kwargs
         ):
         if data_names is None: data_names = self.name_collection.names['data']
-        if metric_names is None: metric_names = self.name_collection.names['metric']
+        if metric_names is None: metric_names = self.name_collection.get_metric_names()
         if model_names is None: model_names = self.name_collection.names['model']
-        if 'episode' in metric_names:
-            metric_names.remove('episode')
         r = len(data_names)
         c = len(metric_names)
         if r == 0 or c == 0:
@@ -278,6 +299,19 @@ class LogsManager:
         if to_file:
             fig.savefig(to_file, dpi=dpi)
     
+    def config_ax(self, ax:plt.Axes, range:PlotRange, metric_name:str):
+        ax.grid(True, ls='--', alpha=0.5)
+        range.set_ax(ax)
+        if metric_name in LEGEND_LOC.keys():
+            ax.legend(loc=LEGEND_LOC[metric_name])
+        else: ax.legend()
+        ax.set_xlabel(self.name_collection.get_x_metric_name())
+        # xScalarFormatter = MyScalarFormatter()
+        # xScalarFormatter.set_powerlimits((-2,3))
+        ax.xaxis.set_major_formatter(MyScalarFormatter())
+        # ax.yaxis.set_major_formatter(MyScalarFormatter())
+        ax.ticklabel_format(style='sci', scilimits=[-2,3])
+    
     def plot_sparse(self, axs, data_names, metric_names, model_names, **kwargs):
         for i, data_name in enumerate(data_names):
             range = PlotRange()
@@ -287,12 +321,7 @@ class LogsManager:
                 for model_name in model_names:
                     self.painters[model_name].plot(ax, data_name, metric_name, range, **kwargs)
                 ax.set_title(f"{data_name} {metric_name}")
-                ax.grid(True, ls='--', alpha=0.5)
-                range.set_ax(ax)
-                if metric_name in LEGEND_LOC.keys():
-                    ax.legend(loc=LEGEND_LOC[metric_name])
-                else: ax.legend()
-                # ax.legend()
+                self.config_ax(ax, range, metric_name)
     
     def plot_merge_data(self, axs, data_names, metric_names, model_names, **kwargs):
         # update model data frame first
@@ -306,35 +335,26 @@ class LogsManager:
                 print(f"Seaborn is ploting '{model_name}' '{metric_name}'...")
                 self.painters[model_name].plot_merge_data(ax, metric_name, range, **kwargs)
             ax.set_title(f"{metric_name}")
-            ax.grid(True, ls='--', alpha=0.5)
-            range.set_ax(ax)
-            if metric_name in LEGEND_LOC.keys():
-                ax.legend(loc=LEGEND_LOC[metric_name])
-            else: ax.legend()
-            # ax.legend()
+            self.config_ax(ax, range, metric_name)
     
 class ModelLogsPainter:
     """
     Save model level logs.
     """
 
-    def __init__(self, path:Path, name, name_collection):
+    def __init__(self, path:Path, name, name_collection:NameCollection):
         self.path, self.name, self.name_collection = path, name, name_collection
         self.painters = {}  # DataLogsPainter
-        self.epoch_sizes = None
         self.__read_dir()
         self.df = None
     
     def __read_dir(self):
         path = self.path
-        path_epoch_sizes = path.joinpath("epoch_sizes.json")
-        if path_epoch_sizes.exists():
-            self.epoch_sizes = read_json(path_epoch_sizes)
         data_names = []
         for f in path.iterdir():
             if f.is_dir() and not is_ignore_data(f.name):
                 data_names.append(f.name)
-                painter = DataLogsPainter(f, self.name, f.name, self.epoch_sizes, self.name_collection)
+                painter = DataLogsPainter(f, self.name, f.name, self.name_collection)
                 self.painters[f.name] = painter
         self.name_collection.update('data', data_names)
     
@@ -355,7 +375,9 @@ Model '{self.name}' don't have data '{data_name}', skip merge it.")
             painter = self.painters[data_name]
             if self.df is None: self.df = painter.to_df()
             else: self.df = pd.concat([self.df, painter.to_df()]).reset_index(drop=True)
-        self.df_notna = ~self.df.groupby('episode').mean().isna()
+        self.df_notna = ~self.df.groupby(
+            self.name_collection.get_x_metric_name()
+        ).mean().isna()
     
     def get_notna_range(self, metric_name) -> PlotRange:
         true_index = self.df_notna[self.df_notna[metric_name]].index
@@ -365,7 +387,11 @@ Model '{self.name}' don't have data '{data_name}', skip merge it.")
         if self.df is None:
             raise Exception("Error: model_logs_painter.df=None, it hasn't init!")
         range.update_from_range(self.get_notna_range(metric_name))
-        sns.lineplot(ax=ax, data=self.df, x='episode', y=metric_name, label=self.name, **kwargs)
+        sns.lineplot(
+            ax=ax, data=self.df,
+            x=self.name_collection.get_x_metric_name(),
+            y=metric_name, label=self.name, **kwargs
+        )
 
 def get_suffix(path):
     return path.name.split('.')[-1]
@@ -377,53 +403,35 @@ class DataLogsPainter:
 
     suffix_list = ['csv', 'json']
 
-    def __init__(self, path:Path, model_name, data_name, epoch_sizes=None, name_collection=None):
-        self.path, self.epoch_sizes, self.name_collection = path, epoch_sizes, name_collection
-        self.epoch_counts = []
+    def __init__(self, path:Path, model_name, data_name, name_collection=None):
+        self.path, self.name_collection = path, name_collection
         self.model_name, self.data_name = model_name, data_name
         self.metric_names = []
         self.logs = {}
         self.__read_dir()
     
     def __read_dir(self):
-        if self.epoch_sizes is None:
-            path_epoch_sizes = self.path.joinpath("epoch_sizes.json")
-            if not path_epoch_sizes.exists():
-                # raise Exception(f"Error: {self.model_name}'s {self.data_name} dataset don't have 'epoch_sizes.json' file!")
-                warnings.warn(f"\
-Warning: {self.model_name}'s {self.data_name} \
-dataset don't have 'epoch_sizes.json' file, \
-default by 1")
-            else: self.epoch_sizes = read_json(path_epoch_sizes)
         files = []
         for f in self.path.iterdir():
             if is_ignore_data(f.name): continue
             if get_suffix(f) not in self.suffix_list:
                 warnings.warn(f"Warning: Could not read file '{f}'!")
-            elif f.name != "epoch_sizes.json":
-                files.append(f)
+            else: files.append(f)
         files = sorted(files)
-        if self.epoch_sizes is None:
-            self.epoch_sizes = [1 for _ in range(len(files))]
-        if len(self.epoch_sizes) != len(files):
-            raise Exception(f"Error: {self.model_name}'s {self.data_name} epoch_size length {len(self.epoch_sizes)} != files number {len(files)}")
         for idx, f in enumerate(files):
             suffix = get_suffix(f)
-            if suffix == 'csv': self.__read_csv(f, self.epoch_sizes[idx])
-            elif suffix == 'json': self.__read_json(f, self.epoch_sizes[idx])
+            if suffix == 'csv': self.__read_csv(f)
+            elif suffix == 'json': self.__read_json(f)
     
     def __read_csv(self, path): pass
 
-    def __read_json(self, path, epoch_size):
+    def __read_json(self, path):
         logs = read_json(path)
         self.name_collection.update('metric', list(logs.keys()))
         for key, value in logs.items():
-            if len(value) % epoch_size != 0:
-                raise Exception(f"Error: {self.model_name}-{self.data_name} '{path.name}' {key}'s length {len(value)} % epoch size {epoch_size} != 0")
             if self.logs.get(key) is None:
                 self.logs[key] = []
             self.logs[key] += value
-        self.epoch_counts.append(len(value) // epoch_size)
     
     def plot(self, ax, metric_name, range:PlotRange, **kwargs):
         if self.logs.get(metric_name) is None:
@@ -431,11 +439,7 @@ default by 1")
 Model '{self.model_name}' data '{self.data_name}' don't have\
 metric '{metric_name}', skip plot it.")
             return
-        x = []
-        now = 0
-        for size, count in zip(self.epoch_sizes, self.epoch_counts):
-            x = np.concatenate([x, now + np.arange(1, count * size + 1) / size])
-            now += count
+        x = np.array(self.logs.get(self.name_collection.get_x_metric_name()))
         ndim = np.array(self.logs[metric_name]).ndim
         if ndim != 1:
             raise Exception(f"Error: Could not plot {self.model_name}-{self.data_name}-{metric_name} since it's ndim={ndim} not 1")

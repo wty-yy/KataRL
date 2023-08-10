@@ -44,9 +44,12 @@ class PlotManager:
     
     def plot_cycle(self, cycle_time=10):
         while True:
-            self.update()
-            self.plot_logs()
-            time.sleep(cycle_time)
+            try:
+                self.update()
+                self.plot_logs()
+                time.sleep(cycle_time)
+            except KeyboardInterrupt:
+                break
 
     def plot_frame(self, file_path):
         path = self.load_paths[0].joinpath(file_path)
@@ -79,8 +82,6 @@ def load_parse():
     parser.add_argument('-i', '--id', nargs='+', default=None, type=int, help="Id of Data (int)")
     parser.add_argument('-m', '--model', nargs='+', default=['DQN'], type=str, help="The type of model (str)")
     parser.add_argument('-pc', '--plot-cycle', action='store_true', help="Whether plot cyclely (bool)")
-    parser.add_argument('-pf', '--plot-frame', action='store_true', help="Plot the frames from file (bool)")
-    parser.add_argument('-ff', '--frame-file', type=str, help="The frame file path (str)")
     parser.add_argument('--merge', action='store_true', help="Plot the data after merge")
     parser.add_argument('-a', '--alpha', default=0.5, type=float, help="Alpha of figure")
     args = parser.parse_args()
@@ -93,36 +94,6 @@ def load_parse():
         plot_manager.plot_cycle()
     else:
         plot_manager.plot_logs()
-    if args.plot_frame:
-        if args.frame_file is None:
-            raise Exception("Args Error: Need add '-ff, --frame-file' for the frame path")
-        plot_manager.plot_frame(args.frame_file)
-
-def plot_merge_data():
-    plot_manager = get_plot_manager('DQN')
-    plot_manager.logs_manager.plot(data_names=[
-        # "history-0000",
-        # "history-0001",
-        # "history-0002",
-        # "history-0003",
-        # "history-0004",
-        # "history-0005",
-        # "history-0006",
-        # "history-0007",
-        # "history-0008",
-        # "history-0009",
-        "history-0010",
-        "history-0011",
-        "history-0012",
-        "history-0013",
-        "history-0014",
-        "history-0015",
-        "history-0016",
-        "history-0017",
-        # "history-0018",
-        # "history-0019",
-    ], to_file=PATH.FIGURES.joinpath(get_time_str()+'.png'), merge_data=True)
-    # plt.show()
 
 if __name__ == '__main__':
     load_parse()
