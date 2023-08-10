@@ -18,7 +18,6 @@ def get_logs() -> Logs:
             'step': 0,
             'q_value': keras.metrics.Mean(name='q_value'),
             'loss': keras.metrics.Mean(name='loss'),
-            'frame': []
         }
     )
     
@@ -59,7 +58,7 @@ class MemoryCache:
 class DQN(Agent):
 
     def __init__(
-            self, env:Env=None, verbose=False,
+            self, env:Env=None,
             agent_name='DQN', agent_id=0,
             episodes=100,
             model=None,  # Q value model
@@ -69,7 +68,7 @@ class DQN(Agent):
             **kwargs
         ):
         models = [model]
-        super().__init__(env, verbose, agent_name, agent_id, episodes, models, **kwargs)
+        super().__init__(env, agent_name, agent_id, episodes, models, **kwargs)
         self.model = model
         self.loss_fn = keras.losses.MeanSquaredError()
         self.logs = get_logs()
@@ -87,8 +86,7 @@ class DQN(Agent):
                 state_, reward, terminal = self.env.step(action)
                 self.remember(state, action, reward, state_, terminal)
                 loss, q_value = self.fit()
-                frame = self.env.render() if self.verbose else None
-                self.logs.update(['q_value', 'loss', 'frame'], [q_value, loss, frame])
+                self.logs.update(['q_value', 'loss'], [q_value, loss])
                 # BUGFIX: forget use new state
                 state = state_
                 if terminal: break
@@ -104,8 +102,6 @@ class DQN(Agent):
             for step in range(self.env.max_step):
                 action = self.act(state)
                 state_, _, terminal = self.env.step(action)
-                frame = self.env.render() if self.verbose else None
-                self.logs.update(['frame'], [frame])
                 state = state_
                 if terminal: break
             self.logs.update(['episode', 'step'], [episode, step])
@@ -152,11 +148,11 @@ class DQN(Agent):
         self.best_episode.update_best(
             now=self.logs.logs['step'], logs=self.logs.to_dict()
         )
-        self.history.update_dict(self.logs.to_dict(drops=['frame']))
+        self.history.update_dict(self.logs.to_dict())
     
 if __name__ == '__main__':
     dqn = DQN(
         env=GymEnv(name="CartPole-v1", render_mode="rgb_array"),
-        verbose=True, agent_id=0, episodes=5
+        agent_id=0, episodes=5
     )
     dqn.train()

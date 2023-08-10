@@ -7,7 +7,6 @@ class Agent:
     """
     Initialize:
     -   env: The environment that agent interact with.
-    -   verbose: Whether render the env and save the frames.
     -   agent_name: The agent's name.
     -   agent_id: The agent's id (means which agent is training).
     -   episodes: Total training episodes.
@@ -28,13 +27,13 @@ class Agent:
     """
     
     def __init__(
-            self, env:Env=None, verbose=False,
+            self, env:Env=None,
             agent_name=None, agent_id=0,
             episodes=None, models:list=None, **kwargs
         ):
-        self.env, self.verbose, self.agent_name, self.agent_id, \
+        self.env, self.agent_name, self.agent_id, \
             self.episodes, self.models = \
-            env, verbose, agent_name, agent_id, \
+            env, agent_name, agent_id, \
             episodes, models
         self.timestr = get_time_str()
 

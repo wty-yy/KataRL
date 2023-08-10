@@ -50,7 +50,7 @@ class MLP(Model):
     def build_optimizer(self, lr) -> keras.optimizers.Optimizer:
         return keras.optimizers.Adam(learning_rate=lr)
 
-def A2C_cartpole_train1(name="A2C-Adam-v3-p5-r20-deeper"):
+def A2C_cartpole_train1(name="A2C-deeper"):
     start_idx = 0
     N = 20
     for idx in range(start_idx, start_idx + N):
@@ -65,14 +65,14 @@ def A2C_cartpole_train1(name="A2C-Adam-v3-p5-r20-deeper"):
                 name='policy-model', is_value_model=False,
                 lr=1e-5
             ),
-            env=GymEnv(name='CartPole-v1', render_mode='rgb_array'),
-            verbose=False, agent_id=idx, episodes=1000
+            env=GymEnv(name='CartPole-v1'),
+            agent_id=idx, episodes=1000
         )
         a2c.train()
 
 def A2C_cartpole_eval1(agent_id, load_id, episodes=10):
     a2c = A2C(
-        agent_name='A2C',
+        agent_name='A2C-deeper',
         value_model=MLP(
             name='value-model', is_value_model=True,
             load_id=load_id,
@@ -81,8 +81,8 @@ def A2C_cartpole_eval1(agent_id, load_id, episodes=10):
             name='policy-model', is_value_model=False,
             load_id=load_id,
         ),
-        env=GymEnv(name='CartPole-v1', render_mode='rgb_array'),
-        verbose=True, agent_id=agent_id, episodes=episodes
+        env=GymEnv(name='CartPole-v1', capture_video=True),
+        agent_id=agent_id, episodes=episodes
     )
     a2c.evaluate()
     

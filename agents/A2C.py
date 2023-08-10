@@ -15,7 +15,6 @@ def get_logs() -> Logs:
             'step': 0,
             'v_value': keras.metrics.Mean(name='v_value'),
             'loss': keras.metrics.Mean(name='loss'),
-            'frame': []
         }
     )
 
@@ -25,14 +24,14 @@ def expand_dim(state):
 class A2C(Agent):
     
     def __init__(
-            self, env: Env = None, verbose=False,
+            self, env: Env = None,
             agent_name='A2C', agent_id=0,
             value_model: Model = None, policy_model: Model = None,
             episodes=1000, gamma=gamma,  # constants.A2C
             **kwargs
         ):
         models = [value_model, policy_model]
-        super().__init__(env, verbose, agent_name, agent_id, episodes, models, **kwargs)
+        super().__init__(env, agent_name, agent_id, episodes, models, **kwargs)
         self.value_model, self.policy_model = value_model, policy_model
         self.gamma = gamma
         self.logs = get_logs()
@@ -45,8 +44,7 @@ class A2C(Agent):
                 action = self.act(state)
                 state_, reward, terminal = self.env.step(action)
                 loss, v_value = self.fit(state, action, reward, state_, terminal)
-                frame = self.env.render() if self.verbose else None
-                self.logs.update(['v_value', 'loss', 'frame'], [v_value, loss, frame])
+                self.logs.update(['v_value', 'loss'], [v_value, loss])
                 state = state_
                 if terminal: break
             self.logs.update(['episode', 'step'], [episode, step])
@@ -62,8 +60,6 @@ class A2C(Agent):
             for step in range(self.env.max_step):
                 action = self.act(state)
                 state_, _, terminal = self.env.step(action)
-                frame = self.env.render() if self.verbose else None
-                self.logs.update(['frame'], [frame])
                 state = state_
                 if terminal: break
             self.logs.update(['episode', 'step'], [episode, step])
@@ -102,4 +98,4 @@ class A2C(Agent):
         self.best_episode.update_best(
             now=self.logs.logs['step'], logs=self.logs.to_dict()
         )
-        self.history.update_dict(self.logs.to_dict(drops=['frame']))
+        self.history.update_dict(self.logs.to_dict())

@@ -72,7 +72,7 @@ def A2C_cartpole_train():
     for idx in range(start_idx, start_idx + N):
         print(f"{idx}/{N}:")
         a2c = A2C(
-            agent_name='A2C-Adam-v3-p5-r20',
+            agent_name='A2C',
             value_model=MLP(
                 name='value-model', is_value_model=True,
                 lr=1e-3
@@ -81,7 +81,7 @@ def A2C_cartpole_train():
                 name='policy-model', is_value_model=False,
                 lr=1e-5
             ),
-            env=GymEnv(name='CartPole-v1', render_mode='rgb_array'),
+            env=GymEnv(name='CartPole-v1'),
             verbose=False, agent_id=idx, episodes=1000
         )
         a2c.train()
@@ -97,7 +97,7 @@ def A2C_cartpole_eval(agent_id, load_id, episodes=10):
             name='policy-model', is_value_model=False,
             load_id=load_id,
         ),
-        env=GymEnv(name='CartPole-v1', render_mode='rgb_array'),
+        env=GymEnv(name='CartPole-v1', capture_video=True),
         verbose=True, agent_id=agent_id, episodes=episodes
     )
     a2c.evaluate()

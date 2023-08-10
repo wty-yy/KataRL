@@ -40,7 +40,7 @@ def DQN_cartpole_train1(name="DQN-4-deeper"):
             dqn = DQN(
                 agent_name=name,
                 model=MLP(),
-                env=GymEnv(name="CartPole-v1", render_mode="rgb_array"),
+                env=GymEnv(name="CartPole-v1"),
                 verbose=False, agent_id=idx, episodes=1000,
                 batch_size=batch_size
             )
@@ -50,7 +50,7 @@ def DQN_cartpole_eval1(agent_id, load_id, batch_size, episodes=10):
     dqn = DQN(
         agent_name=f'DQN-{batch_size}',
         model=MLP(load_id=load_id),
-        env=GymEnv(name="CartPole-v1", render_mode="rgb_array"),
+        env=GymEnv(name="CartPole-v1", capture_video=True),
         verbose=True, agent_id=agent_id, episodes=episodes,
         batch_size=batch_size
     )
