@@ -99,14 +99,17 @@ class PPO(Agent):
             gamma=gamma, lambda_=lambda_, epsilon=epsilon,
             actor_N=actor_N, frames_M=frames_M, step_T=step_T,
             epochs=epochs, batch_size=batch_size,
+            advantage_normalize=False,
             **kwargs):
         models = [model]
         super().__init__(env, agent_name, agent_id, episodes, models, **kwargs)
         self.model, self.gamma, self.lambda_, self.epsilon, \
             self.actor_N, self.frames_M, self.step_T, \
-            self.epochs, self.batch_size = \
+            self.epochs, self.batch_size, \
+            self.advantage_normalize = \
             model, gamma, lambda_, epsilon,\
-            actor_N, frames_M, step_T, epochs, batch_size
+            actor_N, frames_M, step_T, epochs, batch_size, \
+            advantage_normalize
         self.data_size = actor_N * step_T
         self.logs = get_logs()
         # init actors
@@ -149,8 +152,9 @@ class PPO(Agent):
     
     @tf.function
     def train_step(self, s, a, ad, v, logpi):
-        mean, var = tf.nn.moments(ad, axes=[0])
-        ad = (ad - mean) / (var + EPS)
+        if self.advantage_normalize:
+            mean, var = tf.nn.moments(ad, axes=[0])
+            ad = (ad - mean) / (var + EPS)
         with tf.GradientTape() as tape:
             v_s, p_s = self.model(s)
             loss_v = tf.reduce_mean(tf.square(v_s-v)/2)
