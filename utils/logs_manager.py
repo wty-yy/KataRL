@@ -306,10 +306,7 @@ class LogsManager:
             ax.legend(loc=LEGEND_LOC[metric_name])
         else: ax.legend()
         ax.set_xlabel(self.name_collection.get_x_metric_name())
-        # xScalarFormatter = MyScalarFormatter()
-        # xScalarFormatter.set_powerlimits((-2,3))
         ax.xaxis.set_major_formatter(MyScalarFormatter())
-        # ax.yaxis.set_major_formatter(MyScalarFormatter())
         ax.ticklabel_format(style='sci', scilimits=[-2,3])
     
     def plot_sparse(self, axs, data_names, metric_names, model_names, **kwargs):
