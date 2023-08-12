@@ -440,9 +440,13 @@ metric '{metric_name}', skip plot it.")
         ndim = np.array(self.logs[metric_name]).ndim
         if ndim != 1:
             raise Exception(f"Error: Could not plot {self.model_name}-{self.data_name}-{metric_name} since it's ndim={ndim} not 1")
-        ax.plot(x, self.logs[metric_name], label=self.model_name, **kwargs)
-        not_nan = ~np.isnan(np.array(self.logs[metric_name], dtype='float32'))
-        range.update(min=x[not_nan].min(), max=x[not_nan].max())
+        y = np.array(self.logs[metric_name], dtype='float32')
+        not_nan = ~np.isnan(y)
+        x, y = x[not_nan], y[not_nan]
+        ax.plot(x, y, label=self.model_name, **kwargs)
+        # not_nan = ~np.isnan(np.array(self.logs[metric_name], dtype='float32'))
+        # range.update(min=x[not_nan].min(), max=x[not_nan].max())
+        range.update(min=x.min(), max=x.max())
     
     def to_df(self):
         return pd.DataFrame(self.logs)
