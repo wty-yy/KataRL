@@ -50,6 +50,8 @@ class PlotManager:
                 time.sleep(cycle_time)
             except KeyboardInterrupt:
                 break
+            except:
+                continue
 
     def plot_frame(self, file_path):
         path = self.load_paths[0].joinpath(file_path)
