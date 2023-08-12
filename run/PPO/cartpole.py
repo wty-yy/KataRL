@@ -39,7 +39,7 @@ def PPO_cartpole_train():
         print(f"{idx}/{N}:")
         ppo = PPO(
             env=GymEnv(name='CartPole-v1', num_envs=actor_N),
-            agent_name='PPO-no',
+            agent_name='PPO-b32-T512-ent1-ncV',
             model=MLP(lr=3e-4),
             agent_id=idx
         )
