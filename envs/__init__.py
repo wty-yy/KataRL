@@ -53,3 +53,6 @@ class Env():
         return: frame
         """
         pass
+    
+    def get_terminal_steps(self) -> list:
+        return self.step_count[self.last_terminal].tolist()
