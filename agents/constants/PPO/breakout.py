@@ -1,0 +1,14 @@
+gamma = 0.99  # discount rate
+lambda_ = 0.95  # GAE parameter
+epsilon = 0.2  # clip epsilon
+v_epsilon = 1  # value clip epsilon
+actor_N = 8  # Actor number > 1
+frames_M = int(5e6)  # Total frames
+step_T = 128  # move steps
+epochs = 5  # train epochs
+batch_size = 64
+coef_value = 1  # coef of value loss
+coef_entropy = 0.01  # coef of entropy regular
+flag_ad_normal = True  # Whether normalize advantage value
+flag_clip_value = False  # Whether clip the ad value
+EPS = 1e-8

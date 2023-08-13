@@ -19,6 +19,10 @@ def load_parse():
         "-dpi", default=100, type=int,
         help="The dpi of saving figure."
     )
+    parser.add_argument(
+        "--metric", nargs="+", default=None,
+        help="The mectircs to display."
+    )
 
     args = parser.parse_args()
     if args.path is None:
@@ -41,6 +45,7 @@ it will plot all the model under the logs path")
     print(logs_manager.name_collection.names)
     logs_manager.plot(
         to_file=PATH.FIGURES.joinpath(get_time_str()+'-merge.png'),
+        metric_names=args.metric,
         merge_data=True, alpha=args.alpha, dpi=args.dpi
     )
     

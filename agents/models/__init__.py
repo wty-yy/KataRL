@@ -44,7 +44,7 @@ class Model:
         self.optimizer = self.build_optimizer(self.lr)
         if self.load_id is not None:
             self.save_id = self.load_id + 1
-        if verbose: self.plot_model()
+        if verbose: self.plot_model(); self.model.summary()
 
     def plot_model(self):
         path = PATH.FIGURES.joinpath(f'{self.name}.png')

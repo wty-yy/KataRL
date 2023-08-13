@@ -24,9 +24,16 @@ def make_onehot(x:np.ndarray, depth=None):
     ret[np.arange(x.size), x] = 1
     return ret
 
-def sample_from_proba(proba):
+def sample_from_proba(proba:np.ndarray):
+    # proba[np.isnan(proba)] = 0
+    # print(proba)
     choice = lambda p: np.random.choice(len(p), 1, p=p)[0]
-    return np.apply_along_axis(choice, axis=1, arr=proba).astype('int32')
+    try:
+        action = np.apply_along_axis(choice, axis=1, arr=proba).astype('int32')
+    except:
+        print("sample proba GG, sample randomly", proba)
+        raise
+    return action
 
 def get_time_str():
     return datetime.now().strftime(r"%Y%m%d-%H%M%S")

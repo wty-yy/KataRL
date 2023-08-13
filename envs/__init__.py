@@ -32,7 +32,10 @@ class Env():
             name, seed, num_envs, capture_video, max_step
         self.state_shape, self.action_shape, self.action_size = \
             state_shape, action_shape, action_size
-        self.step_count = np.zeros(self.num_envs, dtype='int32')
+        self.history = {
+            'step_count': np.zeros(self.num_envs, dtype='int32'),
+            'sum_reward': np.zeros(self.num_envs, dtype='float32'),
+        }
         self.last_terminal = None
     
     def step(self, action):
@@ -45,14 +48,36 @@ class Env():
         """
         return: init_state
         """
-        self.step_count = np.zeros(self.num_envs, dtype='int32')
-        pass
+        for key, value in self.history.items():
+            self.history[key] = np.zeros_like(value)
 
     def render(self):
         """
         return: frame
         """
         pass
+
+    def add_history(self, keys, values):
+        for key, value in zip(keys, values):
+            self.history[key] += value
+    
+    def reset_history(self):
+        if self.last_terminal is not None:
+            for key in self.history.keys():
+                self.history[key][self.last_terminal] = 0
+
+    def add_history(self, keys, values):
+        for key, value in zip(keys, values):
+            self.history[key] += value
+    
+    def reset_history(self):
+        if self.last_terminal is not None:
+            for key in self.history.keys():
+                self.history[key][self.last_terminal] = 0
+
     
     def get_terminal_steps(self) -> list:
-        return self.step_count[self.last_terminal].tolist()
+        return self.history['step_count'][self.last_terminal].tolist()
+
+    def get_terminal_rewrad(self) -> list:
+        return self.history['sum_reward'][self.last_terminal].tolist()

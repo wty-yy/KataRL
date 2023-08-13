@@ -9,7 +9,8 @@
 2023.8.8. 完成基本框架，但是效率低，且value值计算错误
 2023.8.9. 使用env.vector重写Actor，删除copy weights
 2023.8.10. 完成PPO
-2023.8.12. 修正max step，只在失败时进行记录
+2023.8.12. 修正max step，只在失败时进行记录，完成cartpole调参
+2023.8.13. 加入新环境Breakout
 '''
 
 from agents import Agent
@@ -29,9 +30,11 @@ def get_logs() -> Logs:
             'frame': 0,
             'step': keras.metrics.Mean(name='step'),
             'v_value': keras.metrics.Mean(name='v_value'),
-            'loss': keras.metrics.Mean(name='loss'),
             'loss_p': keras.metrics.Mean(name='loss_p'),
-            'loss_v': keras.metrics.Mean(name='loss_v')
+            'loss_v': keras.metrics.Mean(name='loss_v'),
+            'loss_ent': keras.metrics.Mean(name='loss_ent'),
+            'advantage': keras.metrics.Mean(name='advantage'),
+            'max_reward': 0,
         }
     )
 
@@ -63,11 +66,11 @@ class Actor:
             np.zeros(shape=(self.T, self.N), dtype='float32'), \
             np.zeros(shape=(self.T, self.N), dtype='float32'), \
             np.zeros(shape=(self.T, self.N), dtype='float32')
-        terminal_steps = []
+        terminal_steps, terminal_rewards = [], []
         for step in range(self.T):
             v, proba = self.pred(self.state)
             V[step] = v.numpy().squeeze()
-            action = sample_from_proba(proba.numpy())
+            action = sample_from_proba(proba)
             action_one_hot = make_onehot(action, depth=self.env.action_size).astype('bool')
             LP[step] = np.log(proba[action_one_hot])
             state_, reward, terminal = self.env.step(action)
@@ -76,6 +79,7 @@ class Actor:
                 self.state, action, reward, state_, terminal
             self.state = state_
             terminal_steps += self.env.get_terminal_steps()
+            terminal_rewards += self.env.get_terminal_rewrad()
             # max_step = int(max(max_step, self.env.step_count.max()))
         v_last, _ = self.pred(self.state)
         v_last = v_last.numpy().reshape(1, self.N)
@@ -84,13 +88,13 @@ class Actor:
         for i in reversed(range(self.T-1)):
             AD[i] += self.gamma * self.lambda_ * AD[i+1] * (~T[i])
         S, A, AD, V, LP = \
-            S.reshape(self.data_size, -1), \
-            A.reshape(self.data_size, -1), \
-            AD.reshape(self.data_size, -1), \
-            V.reshape(self.data_size, -1), \
-            LP.reshape(self.data_size, -1)
+            S.reshape(self.data_size, *state_shape), \
+            A.reshape(self.data_size, *action_shape), \
+            AD.reshape(self.data_size, 1), \
+            V.reshape(self.data_size, 1), \
+            LP.reshape(self.data_size, 1)
         ds = tf.data.Dataset.from_tensor_slices((S,A,AD,V,LP))
-        return ds, terminal_steps
+        return ds, terminal_steps, terminal_rewards
 
 class PPO(Agent):
 
@@ -133,9 +137,18 @@ class PPO(Agent):
         num_iters = (self.frames_M-1) // self.data_size + 1
         for i in tqdm(range(num_iters)):
             self.logs.reset()
-            steps = self.fit()
+            try:
+                steps, rewards = self.fit()
+            except:
+                print("GG: frame =", frame)
+                raise
+            # print(rewards)
             frame = (i+1) * self.data_size
-            self.logs.update(['frame', 'step'], [frame, steps])
+            max_reward = 0 if len(rewards) == 0 else int(np.max(rewards))
+            self.logs.update(
+                ['frame', 'step', 'max_reward'],
+                [frame, steps, max_reward]
+            )
             self.update_history()
             if (i + 1) % 10 == 0:
                 self.model.save_weights()
@@ -144,24 +157,30 @@ class PPO(Agent):
         num_iters = (self.frames_M-1) // self.data_size + 1
         for i in tqdm(range(num_iters)):
             self.logs.reset()
-            _, steps = self.actor.act()
+            _, steps, rewards = self.actor.act()
             frame = (i+1) * self.data_size
-            self.logs.update(['frame', 'step'], [frame, steps])
+            max_reward = 0 if len(rewards) == 0 else int(np.max(rewards))
+            self.logs.update(
+                ['frame', 'step', 'max_reward'],
+                [frame, steps, max_reward])
             self.update_history()
 
     def fit(self):
         ds = None
-        ds, steps = self.actor.act()
+        ds, steps, rewards = self.actor.act()
         ds = ds.shuffle(1000).batch(self.batch_size)
         for _ in range(self.epochs):
             for s, a, ad, v, logpi in ds:
                 a = make_onehot(a.numpy(), depth=self.env.action_size).astype('bool')
-                value, loss, loss_p, loss_v = self.train_step(s, a, ad, v, logpi)
+                value, loss_p, loss_v, loss_ent = \
+                    self.train_step(s, a, ad, v, logpi)
                 self.logs.update(
-                    ['v_value', 'loss', 'loss_p', 'loss_v'],
-                    [value, loss, loss_p, loss_v]
+                    ['v_value', 'loss_p', 'loss_v', 'loss_ent', \
+                     'advantage'],
+                    [value, loss_p, loss_v, loss_ent, \
+                     tf.reduce_mean(ad)]
                 )
-        return steps
+        return steps, rewards
     
     @tf.function
     def train_step(self, s, a, ad, v, logpi):
@@ -178,8 +197,6 @@ class PPO(Agent):
                 )
                 loss_v = tf.maximum(loss_v, loss_v_clip)
             loss_v = tf.reduce_mean(loss_v / 2)
-            # tf.print("v_now-v:", tf.reduce_mean(v_now - v))
-            # tf.print("ad", tf.reduce_mean(ad))
 
             if self.flag_ad_normal:
                 mean, var = tf.nn.moments(ad, axes=[0])
@@ -206,10 +223,7 @@ class PPO(Agent):
                    - self.coef_entropy * loss_entropy
         grads = tape.gradient(loss, self.model.get_trainable_weights())
         self.model.apply_gradients(grads)
-        # tf.print("clip:", loss_p_clip)
-        # tf.print("value:", loss_v)
-        # tf.print("entropy:", loss_entropy)
-        return tf.reduce_mean(v_now), loss, loss_p_clip, loss_v
+        return tf.reduce_mean(v_now), loss_p_clip, loss_v, loss_entropy
     
     def update_history(self):
         # self.best_episode.update_best(

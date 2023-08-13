@@ -15,6 +15,7 @@ keras = tensorflow.keras
 IGNORE_DATANAME = [  
     r"^cp",  # checkpoint data
     r"^best", # best episode data
+    r"^_", # underline start file
 ]
 LEGEND_LOC = {
     # "step": "upper left",
@@ -91,12 +92,12 @@ class Logs:
         #   Can't use self.logs = self.init_logs.copy()
         #   'keras.metrics.Metric' and 'list' will not be reset
         for key, value in self.logs.items():
-            if isinstance(value, int):
-                self.logs[key] = 0
-            elif isinstance(value, list):
+            if isinstance(value, list):
                 self.logs[key] = []
             elif isinstance(value, keras.metrics.Metric):
                 value.reset_state()
+            else:  # int or float
+                self.logs[key] = 0
     
     def update(self, keys:list, values:list):
         for key, value in zip(keys, values):
@@ -106,7 +107,7 @@ class Logs:
                     target.update_state(value)
                 elif isinstance(target, list):
                     target.append(value)
-                elif isinstance(target, int):
+                else: # int or float
                     self.logs[key] = value
 
     def to_dict(self, drops:list=None):
@@ -187,6 +188,7 @@ class PlotRange:
     
     def set_ax(self, ax:plt.Axes):
         min, max = self.min, self.max
+        if min is None or max is None: return
         if min % 10 != 0:
             min -= self.min % 10
         if max % 10 != 0:
