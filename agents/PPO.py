@@ -35,6 +35,7 @@ def get_logs() -> Logs:
             'loss_ent': keras.metrics.Mean(name='loss_ent'),
             'advantage': keras.metrics.Mean(name='advantage'),
             'max_reward': 0,
+            'learning_rate': 0,
         }
     )
 
@@ -138,18 +139,19 @@ class PPO(Agent):
         num_iters = (self.frames_M-1) // self.data_size + 1
         for i in tqdm(range(num_iters)):
             self.logs.reset()
-            try:
-                steps, rewards = self.fit()
-            except:
-                print("GG: frame =", frame)
-                self.model.save_weights(prefix_name="wrong")
-                raise
+            # try:
+            steps, rewards = self.fit()
+            # except:
+            #     print("GG: frame =", frame)
+            #     self.model.save_weights(prefix_name="wrong")
+            #     raise
             # print(rewards)
             frame = (i+1) * self.data_size
             max_reward = 0 if len(rewards) == 0 else int(np.max(rewards))
+            now_lr = float(self.model.lr.lr.numpy())
             self.logs.update(
-                ['frame', 'step', 'max_reward'],
-                [frame, steps, max_reward]
+                ['frame', 'step', 'max_reward', 'learning_rate'],
+                [frame, steps, max_reward, now_lr]
             )
             self.update_history()
             if (i + 1) % 10 == 0:

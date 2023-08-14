@@ -6,10 +6,31 @@ import tensorflow as tf
 keras = tf.keras
 layers = keras.layers
 
+class MySchedule(keras.optimizers.schedules.LearningRateSchedule):
+    
+    def __init__(self, init_lr, per, tot):
+        self.init_lr, self.per, self.tot = init_lr, per, tot
+        self.lr = tf.Variable(init_lr, dtype='float32', trainable=False)
+    
+    def __call__(self, count):
+        count = tf.cast(count, 'float32')
+        self.lr.assign((
+            1 -
+            (count // self.per) / self.tot
+        ) * self.init_lr)
+        return self.lr
+
+linear_schedule = MySchedule(
+    init_lr=const.init_lr,
+    per=const.data_size // const.batch_size * const.epochs,
+    tot=const.iter_nums
+)
+
 class CNN(Model):
 
     def __init__(
-            self, lr=0.001, load_id=None, verbose=True,
+            self, lr=linear_schedule if const.flag_anneal_lr else const.init_lr,
+            load_id=None, verbose=True,
             name='model', **kwargs
         ):
         super().__init__(lr, load_id, verbose, name, **kwargs)
@@ -57,15 +78,15 @@ class CNN(Model):
         X = X / 255.
         return super().__call__(X)
 
-def PPO_cartpole_train(start_idx=0, load_ids:dict={}):
+def PPO_breakout_train(start_idx=0, load_ids:dict={}):
     N = 1
     for idx in range(start_idx, start_idx + N):
         print(f"{idx}/{N}:")
         load_id = load_ids.get(idx)
         ppo = PPO(
             env=GymEnv(name='Breakout-v4', num_envs=const.actor_N),
-            agent_name='PPO',
-            model=CNN(lr=3e-4, load_id=load_id),
+            agent_name='PPO-breakout',
+            model=CNN(load_id=load_id),
             agent_id=idx, **const.__dict__
         )
         try:
@@ -73,7 +94,7 @@ def PPO_cartpole_train(start_idx=0, load_ids:dict={}):
         except:
             print("GG: continue next training", idx+1)
 
-def PPO_cartpole_eval(agent_id, load_id, frames_M=int(1e4)):
+def PPO_breakout_eval(agent_id, load_id, frames_M=int(1e4)):
     args = const.__dict__
     args['frames_M'] = frames_M
     ppo = PPO(
@@ -81,8 +102,8 @@ def PPO_cartpole_eval(agent_id, load_id, frames_M=int(1e4)):
             name='Breakout-v4', num_envs=const.actor_N,
             capture_video=True
         ),
-        agent_name='PPO',
-        model=CNN(lr=3e-4, load_id=load_id),
+        agent_name='PPO-breakout',
+        model=CNN(load_id=load_id),
         agent_id=agent_id,
         **args
     )
