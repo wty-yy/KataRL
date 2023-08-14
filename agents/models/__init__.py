@@ -60,8 +60,9 @@ class Model:
     def __call__(self, X):
         return self.model(X)
     
-    def save_weights(self):
-        path = PATH.CHECKPOINTS.joinpath(f"{self.name}-{self.save_id:04}")
+    def save_weights(self, prefix_name=""):
+        if len(prefix_name) != 0: prefix_name += '-'
+        path = PATH.CHECKPOINTS.joinpath(prefix_name+f"{self.name}-{self.save_id:04}")
         self.model.save_weights(path)
         self.save_id += 1
     

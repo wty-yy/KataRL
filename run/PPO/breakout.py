@@ -58,7 +58,7 @@ class CNN(Model):
         return super().__call__(X)
 
 def PPO_cartpole_train(start_idx=0, load_ids:dict={}):
-    N = 30
+    N = 1
     for idx in range(start_idx, start_idx + N):
         print(f"{idx}/{N}:")
         load_id = load_ids.get(idx)

@@ -38,9 +38,6 @@ def get_logs() -> Logs:
         }
     )
 
-def expand_dim(state):
-    return tf.expand_dims(tf.constant(state, dtype='float32'), axis=0)
-
 class Actor:
 
     def __init__(self, env:Env, model:keras.Model, gamma, lambda_, step_T):
@@ -70,7 +67,11 @@ class Actor:
         for step in range(self.T):
             v, proba = self.pred(self.state)
             V[step] = v.numpy().squeeze()
-            action = sample_from_proba(proba)
+            try:
+                action = sample_from_proba(proba)  # check
+            except:
+                np.save("logs/(8,210,160,3)_state.txt", self.state)
+                raise
             action_one_hot = make_onehot(action, depth=self.env.action_size).astype('bool')
             LP[step] = np.log(proba[action_one_hot])
             state_, reward, terminal = self.env.step(action)
@@ -141,6 +142,7 @@ class PPO(Agent):
                 steps, rewards = self.fit()
             except:
                 print("GG: frame =", frame)
+                self.model.save_weights(prefix_name="wrong")
                 raise
             # print(rewards)
             frame = (i+1) * self.data_size
