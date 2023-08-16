@@ -43,8 +43,8 @@ rewards = {
     },
     "negative": {
         "CartPole-v1": 1,
-        "Breakout-v4": -10,
-        "ALE/Breakout-v5": -10,
+        "Breakout-v4": None,
+        "ALE/Breakout-v5": None,
     }
 }
 
@@ -54,7 +54,7 @@ class GymEnv(Env):
     """
     
     def __init__(
-            self, name, seed=None, num_envs=1,
+            self, name, seed=1, num_envs=1,
             capture_video=False,
             **kwargs
         ):
@@ -129,9 +129,9 @@ class GymEnv(Env):
     
     def reset(self):
         super().reset()  # reset step_count
-        if self.seed is not None:
-            state, _ = self.envs.reset(seed=self.seed)
-        else: state, _ = self.envs.reset()
+        state, _ = self.envs.reset(
+            seed=[self.seed+i for i in range(self.num_envs)]
+        )
         if self.num_envs == 1: state = state[0]
         # print("state.shape=",state.shape)
         state = self.check_state_shape(state)

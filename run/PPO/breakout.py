@@ -84,15 +84,15 @@ def PPO_breakout_train(start_idx=0, load_ids:dict={}):
         print(f"{idx}/{N}:")
         load_id = load_ids.get(idx)
         ppo = PPO(
-            env=GymEnv(name='Breakout-v4', num_envs=const.actor_N),
+            env=GymEnv(name='ALE/Breakout-v5', num_envs=const.actor_N),
             agent_name='PPO-breakout',
             model=CNN(load_id=load_id),
             agent_id=idx, **const.__dict__
         )
-        try:
-            ppo.train()
-        except:
-            print("GG: continue next training", idx+1)
+        # try:
+        ppo.train()
+        # except:
+        #     print("GG: continue next training", idx+1)
 
 def PPO_breakout_eval(agent_id, load_id, frames_M=int(1e4)):
     args = const.__dict__

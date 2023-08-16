@@ -11,4 +11,5 @@ coef_value = 1  # coef of value loss
 coef_entropy = 0.01  # coef of entropy regular
 flag_ad_normal = True  # Whether normalize advantage value
 flag_clip_value = False  # Whether clip the ad value
+max_clip_norm = 0.5  # clip_by_global_norm(clip_norm)
 EPS = 1e-8

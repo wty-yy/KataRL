@@ -19,7 +19,7 @@ class FireResetWrapper(gym.Wrapper):
         self.env.reset(**kwargs)
         state, _, terminal, truncated, info = self.env.step(1)
         if terminal or truncated:
-            self.env.reset(**kwargs)
+            return self.env.reset(**kwargs)
         return state, info
     
 class EpisodeLifeWrapper(gym.Wrapper):

@@ -23,7 +23,7 @@ class Env():
     """
     
     def __init__(
-            self, name, seed=None, num_envs=1, capture_video=False,
+            self, name, seed=1, num_envs=1, capture_video=False,
             max_step=None,
             state_shape=None, action_shape=None,
             action_size=None, **kwargs

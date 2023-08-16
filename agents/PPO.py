@@ -11,6 +11,10 @@
 2023.8.10. 完成PPO
 2023.8.12. 修正max step，只在失败时进行记录，完成cartpole调参
 2023.8.13. 加入新环境Breakout
+2023.8.14,15. DEBUG 解决训练Breakout训练1.5e6总帧数时出现loss=None的问题
+通过加入lr linear schedule和grad global norm clip解决
+使用环境Breakout-v4最大达到170分
+2023.8.16. 使用环境ALE/Breakout-v5再次训练
 '''
 
 from agents import Agent
@@ -113,6 +117,7 @@ class PPO(Agent):
             coef_entropy=coef_entropy,
             flag_ad_normal=flag_ad_normal,
             flag_clip_value=flag_clip_value,
+            max_clip_norm=max_clip_norm,
             **kwargs):
         models = [model]
         super().__init__(env, agent_name, agent_id, episodes, models, **kwargs)
@@ -122,11 +127,11 @@ class PPO(Agent):
             self.epochs, self.batch_size, \
             self.coef_value, self.coef_entropy, \
             self.flag_clip_value, \
-            self.flag_ad_normal = \
+            self.flag_ad_normal, self.max_clip_norm = \
             model, gamma, lambda_, epsilon, v_epsilon, \
             actor_N, frames_M, step_T, epochs, batch_size, \
             coef_value, coef_entropy, \
-            flag_clip_value, flag_ad_normal
+            flag_clip_value, flag_ad_normal, max_clip_norm
         self.data_size = actor_N * step_T
         self.logs = get_logs()
         # init actors
@@ -170,14 +175,29 @@ class PPO(Agent):
             self.update_history()
 
     def fit(self):
-        ds = None
-        ds, steps, rewards = self.actor.act()
+        try:
+            ds, steps, rewards = self.actor.act()
+        except:
+            import pickle
+            with open("logs/wrong_loss.pkl", "wb") as file:
+                pickle.dump(self.loss, file)
+            self.ds.save("logs/wrong_dataset")
+            # np.save("logs/wrong_grads.npy", self.grads, allow_pickle=True)
+            print("loss", self.loss)
+            raise
         ds = ds.shuffle(1000).batch(self.batch_size)
+        self.ds = ds
         for _ in range(self.epochs):
             for s, a, ad, v, logpi in ds:
                 a = make_onehot(a.numpy(), depth=self.env.action_size).astype('bool')
-                value, loss_p, loss_v, loss_ent = \
+                value, loss_p, loss_v, loss_ent, loss = \
                     self.train_step(s, a, ad, v, logpi)
+                self.loss = {
+                    "loss_p": loss_p,
+                    "loss_v": loss_v,
+                    "loss_ent": loss_ent,
+                    "loss": loss
+                }
                 self.logs.update(
                     ['v_value', 'loss_p', 'loss_v', 'loss_ent', \
                      'advantage'],
@@ -219,15 +239,17 @@ class PPO(Agent):
                     )*ad
                 )
             )
-            loss_entropy = -tf.reduce_mean(
-                tf.reduce_sum(p_now*tf.math.log(p_now), axis=1)
+            loss_entropy = -tf.reduce_mean(  # Fix loss Nan: -0*log(0)=0
+                tf.reduce_sum(p_now*tf.math.log(p_now+EPS), axis=1)
             )
             loss = - loss_p_clip \
                    + self.coef_value * loss_v \
                    - self.coef_entropy * loss_entropy
         grads = tape.gradient(loss, self.model.get_trainable_weights())
+        # Fix loss Nan
+        grads = tf.clip_by_global_norm(grads, clip_norm=self.max_clip_norm)[0]
         self.model.apply_gradients(grads)
-        return tf.reduce_mean(v_now), loss_p_clip, loss_v, loss_entropy
+        return tf.reduce_mean(v_now), loss_p_clip, loss_v, loss_entropy, loss
     
     def update_history(self):
         # self.best_episode.update_best(

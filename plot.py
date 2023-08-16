@@ -44,14 +44,14 @@ class PlotManager:
     
     def plot_cycle(self, cycle_time=10):
         while True:
-            # try:
-            self.update()
-            self.plot_logs()
-            time.sleep(cycle_time)
-            # except KeyboardInterrupt:
-            #     break
-            # except:
-            #     continue
+            try:
+                self.update()
+                self.plot_logs()
+                time.sleep(cycle_time)
+            except KeyboardInterrupt:
+                break
+            except:
+                continue
 
     def plot_frame(self, file_path):
         path = self.load_paths[0].joinpath(file_path)
