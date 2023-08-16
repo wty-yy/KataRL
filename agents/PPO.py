@@ -12,9 +12,9 @@
 2023.8.12. 修正max step，只在失败时进行记录，完成cartpole调参
 2023.8.13. 加入新环境Breakout
 2023.8.14,15. DEBUG 解决训练Breakout训练1.5e6总帧数时出现loss=None的问题
-通过加入lr linear schedule和grad global norm clip解决
+通过加入lr linear schedule和grad global norm clip，修改value_loss_coef=0.5解决
 使用环境Breakout-v4最大达到170分
-2023.8.16. 使用环境ALE/Breakout-v5再次训练
+2023.8.16. 使用环境ALE/Breakout-v5再次训练，并使用更小的clip_epsilon=0.1
 '''
 
 from agents import Agent

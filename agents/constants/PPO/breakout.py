@@ -1,6 +1,6 @@
 gamma = 0.99  # discount rate
 lambda_ = 0.95  # GAE parameter
-epsilon = 0.2  # clip epsilon
+epsilon = 0.1  # clip epsilon
 v_epsilon = 1  # value clip epsilon
 actor_N = 8  # Actor number > 1
 # frames_M = int(5e6)  # Total frames
