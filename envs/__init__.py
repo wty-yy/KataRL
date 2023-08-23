@@ -26,12 +26,12 @@ class Env():
             self, name, seed=1, num_envs=1, capture_video=False,
             max_step=None,
             state_shape=None, action_shape=None,
-            action_size=None, **kwargs
+            action_ndim=None, **kwargs
         ):
         self.name, self.seed, self.num_envs, self.capture_video, self.max_step = \
             name, seed, num_envs, capture_video, max_step
-        self.state_shape, self.action_shape, self.action_size = \
-            state_shape, action_shape, action_size
+        self.state_shape, self.action_shape, self.action_ndim = \
+            state_shape, action_shape, action_ndim
         self.history = {
             'step_count': np.zeros(self.num_envs, dtype='int32'),
             'sum_reward': np.zeros(self.num_envs, dtype='float32'),
@@ -81,3 +81,6 @@ class Env():
 
     def get_terminal_rewrad(self) -> list:
         return self.history['sum_reward'][self.last_terminal].tolist()
+    
+    def close(self):
+        pass

@@ -36,7 +36,7 @@ def sample_from_proba(proba:np.ndarray):
     return action
 
 def get_time_str():
-    return datetime.now().strftime(r"%Y%m%d-%H%M%S")
+    return datetime.now().strftime(r"%Y%m%d_%H%M%S")
 
 def save_json(path, value):
     with open(path, 'w') as file:

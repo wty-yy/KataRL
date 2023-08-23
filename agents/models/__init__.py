@@ -2,7 +2,7 @@ from agents.constants import PATH
 import tensorflow as tf
 keras = tf.keras
 
-class Model:
+class BasicModel:
     """
     Model base class.
     You just need rewrite build function, 
@@ -36,15 +36,24 @@ class Model:
         be auto called if load_id is not None.
     """
 
-    def __init__(self, lr=1e-3, load_id=None, verbose=True, name='model', **kwargs):
-        self.lr, self.load_id, self.verbose, self.name = \
-            lr, load_id, verbose, name
+    def __init__(
+            self, lr=1e-3, load_name=None, load_id=None, verbose=True, name='model', 
+            input_shape=None, output_ndim=None,
+            **kwargs
+        ):
+        self.lr, self.load_name, self.load_id, self.verbose, self.name, \
+        self.input_shape, self.output_ndim = \
+            lr, load_name, load_id, verbose, name, input_shape, output_ndim
         self.save_id = 0
         self.model = self.build_model()
         self.optimizer = self.build_optimizer(self.lr)
         if self.load_id is not None:
             self.save_id = self.load_id + 1
         if verbose: self.plot_model(); self.model.summary()
+
+        self.load_path = None
+        if self.load_name is not None and self.load_id is not None:
+            self.load_path = PATH.LOGS.joinpath(self.load_name).joinpath(f"{self.load_id:04}")
 
     def plot_model(self):
         path = PATH.FIGURES.joinpath(f'{self.name}.png')
@@ -62,15 +71,14 @@ class Model:
     
     def save_weights(self, prefix_name=""):
         if len(prefix_name) != 0: prefix_name += '-'
-        path = PATH.CHECKPOINTS.joinpath(prefix_name+f"{self.name}-{self.save_id:04}")
+        path = PATH.CHECKPOINTS.joinpath(prefix_name+f"{self.save_id:04}")
         self.model.save_weights(path)
         self.save_id += 1
     
     def load_weights(self):
-        if self.load_id is None: return
-        path = PATH.CHECKPOINTS.joinpath(f"{self.name}-{self.load_id:04}")
-        print(f"Load weight from '{path.absolute()}'")
-        self.model.load_weights(path)
+        if self.load_path is None: return
+        print(f"Load weight from '{self.load_path.absolute()}'")
+        self.model.load_weights(self.load_path)
     
     def get_trainable_weights(self):
         return self.model.trainable_weights

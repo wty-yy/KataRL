@@ -8,4 +8,4 @@ epsilon_decay = 0.995
 memory_size = int(1e6)
 start_fit_size = int(1e4)
 
-batch_size = 1
+batch_size = 4

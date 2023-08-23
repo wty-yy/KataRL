@@ -1,23 +1,24 @@
+from tensorboardX import SummaryWriter
 from agents import Agent
-from agents.constants import *
-from agents.constants.DQN import *
+import agents.constants.DQN as const
 from envs.gym_env import GymEnv
 from utils import make_onehot
-from utils.logs_manager import Logs
+from utils.logs import Logs, MeanMetric
 from tqdm import tqdm
 import tensorflow as tf
 import numpy as np
+import time
 
 from envs import Env
 keras = tf.keras
 
-def get_logs() -> Logs:
+def init_logs() -> Logs:
     return Logs(
         init_logs = {
             'episode': 0,
             'step': 0,
-            'q_value': keras.metrics.Mean(name='q_value'),
-            'loss': keras.metrics.Mean(name='loss'),
+            'q_value': MeanMetric(),
+            'loss': MeanMetric(),
         }
     )
     
@@ -58,26 +59,34 @@ class MemoryCache:
 class DQN(Agent):
 
     def __init__(
-            self, env:Env=None,
-            agent_name='DQN', agent_id=0,
-            episodes=100,
-            model=None,  # Q value model
-            batch_size=batch_size,  # constant.DQN
-            memory_size=memory_size,  # constant.DQN
-            start_fit_size=start_fit_size,  # constant.DQN
+            self, agent_name=None,
+            env: Env = None,
+            models: list = None,
+            writer: SummaryWriter = None, 
+            # following customed
+            model=None,
+            episodes=None,
+            batch_size=const.batch_size,
+            gamma=const.gamma,
+            memory_size=const.memory_size,
+            start_fit_size=const.start_fit_size,
+            epsilon_max=const.epsilon_max,
+            epsilon_min=const.epsilon_min,
+            epsilon_decay=const.epsilon_decay,
             **kwargs
         ):
         models = [model]
-        super().__init__(env, agent_name, agent_id, episodes, models, **kwargs)
-        self.model = model
+        super().__init__(agent_name, env, models, writer, **kwargs)
+        self.model, self.logs = model, init_logs()
         self.loss_fn = keras.losses.MeanSquaredError()
-        self.logs = get_logs()
-        self.epsilon = epsilon_max
-        self.batch_size, self.memory_size, self.start_fit_size = \
-            batch_size, memory_size, start_fit_size
+        self.epsilon, self.epsilon_max, self.epsilon_min, self.epsilon_decay = \
+            epsilon_max, epsilon_max, epsilon_min, epsilon_decay
+        self.episodes, self.batch_size, self.gamma, self.memory_size, self.start_fit_size = \
+            episodes, batch_size, gamma, memory_size, start_fit_size
         self.memory = MemoryCache(env.state_shape, env.action_shape, self.memory_size)
     
     def train(self):
+        self.epsilon = self.epsilon_max
         for episode in tqdm(range(self.episodes)):
             self.logs.reset()
             state = self.env.reset()
@@ -91,11 +100,12 @@ class DQN(Agent):
                 state = state_
                 if terminal: break
             self.logs.update(['episode', 'step'], [episode, step])
-            self.update_history()
+            self.write_tensorboard()
             if (episode + 1) % 100 == 0:
                 self.model.save_weights()
 
     def evaluate(self):
+        self.epsilon = 0
         for episode in tqdm(range(self.episodes)):
             self.logs.reset()
             state = self.env.reset()
@@ -105,7 +115,7 @@ class DQN(Agent):
                 state = state_
                 if terminal: break
             self.logs.update(['episode', 'step'], [episode, step])
-            self.update_history()
+            self.write_tensorboard()
 
     def act(self, state):  # epsilon choice policy
         rand = np.random.rand()
@@ -132,23 +142,33 @@ class DQN(Agent):
         if self.memory.count < self.start_fit_size: return None, None
         s, a, r, s_, t = self.memory.sample(self.batch_size)
         r, t = r.squeeze(), t.squeeze()
-        a_onehot = make_onehot(a, depth=self.env.action_size).astype('bool')
+        a_onehot = make_onehot(a, depth=self.env.action_ndim).astype('bool')
 
-        td_target = r + gamma * np.max(self.model(s_), axis=-1) * (1-t)
+        td_target = r + self.gamma * np.max(self.model(s_), axis=-1) * (1-t)
         q_state = self.model(s)
         q_target = q_state.numpy()
         q_target[a_onehot] = td_target
 
         loss, q_value = self.train_step(s, q_target)
         # BUGFIX: decrease epsilon after one fit!
-        self.epsilon = max(self.epsilon * epsilon_decay, epsilon_min)
-        return loss, q_value
-
-    def update_history(self):
-        self.best_episode.update_best(
-            now=self.logs.logs['step'], logs=self.logs.to_dict()
-        )
-        self.history.update_dict(self.logs.to_dict())
+        self.epsilon = max(self.epsilon * self.epsilon_decay, self.epsilon_min)
+        return tf.reduce_mean(loss), tf.reduce_mean(q_value)
+    
+    def write_tensorboard(self):
+        episode = self.logs.logs['episode']
+        d = self.logs.to_dict(drops=['episode'])
+        for key, value in d.items():
+            if key in ['step']: name = 'charts/' + key
+            else: name = 'metrics/' + key
+            if value is not None:
+                self.writer.add_scalar(name, value, episode)
+        self.writer.add_scalar('charts/epsilon', self.epsilon, episode)
+        if d['loss'] is not None:
+            self.writer.add_scalar(
+                'charts/SPS',
+                int(d['step'] * self.batch_size / self.logs.get_time_length()),
+                episode
+            )
     
 if __name__ == '__main__':
     dqn = DQN(

@@ -30,7 +30,7 @@ action_shape = {
     "Breakout-v4": (1,),
     "ALE/Breakout-v5": (1,),
 }
-action_size = {
+action_ndim = {
     "CartPole-v1": 2,
     "Breakout-v4": 4,
     "ALE/Breakout-v5": 4,
@@ -64,7 +64,7 @@ class GymEnv(Env):
             raise Exception(f"Don't know the state_shape of the environment: '{name}'")
         if action_shape.get(name) is None:
             raise Exception(f"Don't know the action_shape of the environment: '{name}'")
-        if action_size.get(name) is None:
+        if action_ndim.get(name) is None:
             raise Exception(f"Don't know the action_size of the environment: '{name}'")
         # if rewards['positive'].get(name) is None:
         #     raise Exception(f"Don't know the positive reward of the environment: '{name}'")
@@ -78,7 +78,7 @@ class GymEnv(Env):
             max_step=max_step[name],
             state_shape=state_shape[name],
             action_shape=action_shape[name],
-            action_size=action_size[name],
+            action_ndim=action_ndim[name],
             **kwargs
         )
         self.use_atari_wrapper = self.name in atari_envs

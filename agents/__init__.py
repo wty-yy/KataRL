@@ -1,7 +1,6 @@
-from utils.history import History
-from utils import get_time_str
 from envs import Env
 from agents.constants import PATH
+from tensorboardX import SummaryWriter
 
 class Agent:
     """
@@ -27,26 +26,27 @@ class Agent:
     """
     
     def __init__(
-            self, env:Env=None,
-            agent_name=None, agent_id=0,
-            episodes=None, models:list=None, **kwargs
+            self, 
+            agent_name=None,
+            env:Env=None,
+            models:list=None,
+            writer:SummaryWriter=None,
+            **kwargs
         ):
-        self.env, self.agent_name, self.agent_id, \
-            self.episodes, self.models = \
-            env, agent_name, agent_id, \
-            episodes, models
-        self.timestr = get_time_str()
+        self.env, self.agent_name, self.models, self.writer = \
+            env, agent_name, models, writer
+        # self.timestr = get_time_str()
 
         # setting logs path early,
         # since history and load_weights will
         # use PATH.HISTORY and PATH.CHECKPOINTS
-        PATH.get_logs_path(self.agent_name, self.agent_id)
+        PATH.get_logs_path(self.agent_name)
 
         for model in models:
             model.load_weights()
-        _ = (self.agent_name, self.agent_id, self.timestr)
-        self.best_episode = History(*_, "best", type='npy')
-        self.history = History(*_, "history", type='json')
+        # _ = (self.agent_name, self.agent_id, self.timestr)
+        # self.best_episode = History(*_, "best", type='npy')
+        # self.history = History(*_, "history", type='json')
     
     def train(self):
         pass
@@ -60,8 +60,12 @@ class Agent:
     def fit(self):
         pass
     
-    def update_history(self):
+    def write_tensorboard(self):
         pass
+    
+    def close(self):
+        self.env.close()
+        self.writer.close()
 
 if __name__ == '__main__':
     agent = Agent()
