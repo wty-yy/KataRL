@@ -61,6 +61,10 @@ python run/DQN/dqn.py -h  # check all params
   dqn.train()
   ```
 
+- Check logs at wandb online. 在加入 `--wandb-track` 后可以直接在网页上查看实时训练结果。
+
+  ![wandb logs](archives/figures/wandb-dqn-chart.png)
+
 ---
 
 The following are legacy functions 以下为旧版功能
