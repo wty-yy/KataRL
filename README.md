@@ -31,7 +31,7 @@ Tried environment 尝试过的环境：
 
 - `Breakout-v4` ([Gymnasium - breakout](https://gymnasium.farama.org/environments/atari/breakout/#breakout)) Following `gif` is generatedd by PPO:
 
-  ![PPO breakout-v4](archives/figures/breakout-1 25-370.gif)
+  ![PPO breakout-v4](archives/figures/breakout-1-25-370.gif)
 
 **Instruction 运行方法**：
 
