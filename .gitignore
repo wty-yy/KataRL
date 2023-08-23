@@ -4,3 +4,4 @@ test*
 .env
 _DEBUG*
 wandb
+*.swp

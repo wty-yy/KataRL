@@ -35,18 +35,13 @@ Tried environment 尝试过的环境：
 
 **Instruction 运行方法**：
 
-In order to read the python path, the main program must be run in the root directory, call the algorithm test from the main program, for example:
+In order to read the python path, the test program must be run in the root directory, use `-h` to check all parse args:
 
-为了能够读取路径，必须在根目录下运行主程序，从主程序中调用算法测试，例如：
+为了能够读取路径，必须在根目录下调用测试程序，使用 `-h` 查看测试的所有参数：
 
 ```shell
-python main.py  # /main.py
-
-# --- 'main.py' ---
-# from run.DQN.cartpole import DQN_cartpole  # Your test model
-# 
-# if  __name__ == '__main__':
-#     DQN_cartpole()
+python run/DQN/dqn.py --train --wandb-track  # training the dqn
+python run/DQN/dqn.py -h  # check all params
 ```
 
 **Frame function example 框架功能栗子：**
@@ -54,16 +49,21 @@ python main.py  # /main.py
 - Train the Agent in the specified training environment. 在指定的训练环境下训练智能体。
 
   ```python
-  def DQN_cartpole:  # /run/DQN/cartpole.py
-      dqn = DQN(
-          agent_name='DQN-4',
-          model=MLP(),  # The model used in DQN
-          env=GymEnv(name="CartPole-v1", render_mode="rgb_array"),  # Environment CartPole
-          verbose=False, agent_id=idx, episodes=1000, load_id=None,  # extends Agent's attribs
-          batch_size=4  # Agent's hyper-args
-      )
-      dqn.train()
+  from agents.models.DQN.tf_mlp import Model  # /run/DQN/dqn.py
+  env = GymEnv(name="CartPole-v1")
+  model = Model(
+      lr=1e-3, load_name=None, load_id=None,
+      input_shape=env.state_shape, output_ndim=env.action_ndim
+  )
+  dqn = DQN(
+      agent_name=args.run_name, env=env, model=model, writer=writer, **vars(args)
+  )
+  dqn.train()
   ```
+
+---
+
+The following are legacy functions 以下为旧版功能
 
 - Periodically display the training status. 周期性显示训练状态。
 
@@ -84,9 +84,6 @@ python main.py  # /main.py
   ```
 
   ![DQN](archives/figures/DQN-batch-1-2-6-16.png)
-
-
-### Test 测试结果
 
 ## Framework 框架架构
 
