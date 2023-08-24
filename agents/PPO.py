@@ -17,27 +17,29 @@
 2023.8.16. 使用环境ALE/Breakout-v5再次训练，并使用更小的clip_epsilon=0.1
 '''
 
+from tensorboardX import SummaryWriter
 from agents import Agent
-from agents.constants.PPO import *
-from agents.models import Model
+import agents.constants.PPO as const
+from agents.models import BaseModel
 from envs import Env
-from utils.logs_manager import Logs
+from utils.logs import Logs, MeanMetric
 from utils import make_onehot, sample_from_proba
 from tqdm import tqdm
 import tensorflow as tf
 keras = tf.keras
 import numpy as np
 
+chart_log_name = ['step', 'max_reward', 'learning_rate']
 def get_logs() -> Logs:
     return Logs(
         init_logs={
             'frame': 0,
-            'step': keras.metrics.Mean(name='step'),
-            'v_value': keras.metrics.Mean(name='v_value'),
-            'loss_p': keras.metrics.Mean(name='loss_p'),
-            'loss_v': keras.metrics.Mean(name='loss_v'),
-            'loss_ent': keras.metrics.Mean(name='loss_ent'),
-            'advantage': keras.metrics.Mean(name='advantage'),
+            'step': MeanMetric(),
+            'v_value': MeanMetric(),
+            'loss_p': MeanMetric(),
+            'loss_v': MeanMetric(),
+            'loss_ent': MeanMetric(),
+            'advantage': MeanMetric(),
             'max_reward': 0,
             'learning_rate': 0,
         }
@@ -45,7 +47,7 @@ def get_logs() -> Logs:
 
 class Actor:
 
-    def __init__(self, env:Env, model:keras.Model, gamma, lambda_, step_T):
+    def __init__(self, env:Env, model:BaseModel, gamma, lambda_, step_T):
         self.env, self.model, self.gamma, self.lambda_ = \
             env, model, gamma, lambda_
         self.T, self.N = step_T, self.env.num_envs
@@ -77,7 +79,7 @@ class Actor:
             except:
                 np.save("logs/(8,210,160,3)_state.txt", self.state)
                 raise
-            action_one_hot = make_onehot(action, depth=self.env.action_size).astype('bool')
+            action_one_hot = make_onehot(action, depth=self.env.action_ndim).astype('bool')
             LP[step] = np.log(proba[action_one_hot])
             state_, reward, terminal = self.env.step(action)
             action = action.reshape(-1, 1)
@@ -105,22 +107,24 @@ class Actor:
 class PPO(Agent):
 
     def __init__(
-            self, env: Env = None,
-            agent_name='PPO', agent_id=0,
-            episodes=None, 
-            model: Model = None,
-            gamma=gamma, lambda_=lambda_,
-            epsilon=epsilon, v_epsilon=v_epsilon,
-            actor_N=actor_N, frames_M=frames_M, step_T=step_T,
-            epochs=epochs, batch_size=batch_size,
-            coef_value=coef_value,
-            coef_entropy=coef_entropy,
-            flag_ad_normal=flag_ad_normal,
-            flag_clip_value=flag_clip_value,
-            max_clip_norm=max_clip_norm,
-            **kwargs):
+            self, agent_name=None,
+            env: Env = None,
+            model: BaseModel = None,
+            writer: SummaryWriter = None,
+            # hyperparameters
+            gamma=const.gamma, lambda_=const.lambda_,
+            epsilon=const.epsilon, v_epsilon=const.v_epsilon,
+            actor_N=const.actor_N, frames_M=const.frames_M, step_T=const.step_T,
+            epochs=const.epochs, batch_size=const.batch_size,
+            coef_value=const.coef_value,
+            coef_entropy=const.coef_entropy,
+            flag_ad_normal=const.flag_ad_normal,
+            flag_clip_value=const.flag_clip_value,
+            max_clip_norm=const.max_clip_norm,
+            **kwargs
+        ):
         models = [model]
-        super().__init__(env, agent_name, agent_id, episodes, models, **kwargs)
+        super().__init__(agent_name, env, models, writer, **kwargs)
         self.model, self.gamma, self.lambda_, \
             self.epsilon, self.v_epsilon, \
             self.actor_N, self.frames_M, self.step_T, \
@@ -134,31 +138,27 @@ class PPO(Agent):
             flag_clip_value, flag_ad_normal, max_clip_norm
         self.data_size = actor_N * step_T
         self.logs = get_logs()
-        # init actors
         self.actor = Actor(
             self.env, self.model,
             self.gamma, self.lambda_, self.step_T
         )
     
     def train(self):
-        num_iters = (self.frames_M-1) // self.data_size + 1
-        for i in tqdm(range(num_iters)):
+        iter_nums = (self.frames_M-1) // self.data_size + 1
+        for i in tqdm(range(iter_nums)):
             self.logs.reset()
-            # try:
             steps, rewards = self.fit()
-            # except:
-            #     print("GG: frame =", frame)
-            #     self.model.save_weights(prefix_name="wrong")
-            #     raise
-            # print(rewards)
             frame = (i+1) * self.data_size
             max_reward = 0 if len(rewards) == 0 else int(np.max(rewards))
-            now_lr = float(self.model.lr.lr.numpy())
+            if isinstance(self.model.lr, float):
+                now_lr = self.model.lr
+            else:
+                now_lr = float(self.model.lr.lr.numpy())
             self.logs.update(
                 ['frame', 'step', 'max_reward', 'learning_rate'],
                 [frame, steps, max_reward, now_lr]
             )
-            self.update_history()
+            self.write_tensorboard()
             if (i + 1) % 10 == 0:
                 self.model.save_weights()
     
@@ -172,32 +172,17 @@ class PPO(Agent):
             self.logs.update(
                 ['frame', 'step', 'max_reward'],
                 [frame, steps, max_reward])
-            self.update_history()
+            self.write_tensorboard()
 
     def fit(self):
-        try:
-            ds, steps, rewards = self.actor.act()
-        except:
-            import pickle
-            with open("logs/wrong_loss.pkl", "wb") as file:
-                pickle.dump(self.loss, file)
-            self.ds.save("logs/wrong_dataset")
-            # np.save("logs/wrong_grads.npy", self.grads, allow_pickle=True)
-            print("loss", self.loss)
-            raise
+        ds, steps, rewards = self.actor.act()
         ds = ds.shuffle(1000).batch(self.batch_size)
         self.ds = ds
         for _ in range(self.epochs):
             for s, a, ad, v, logpi in ds:
-                a = make_onehot(a.numpy(), depth=self.env.action_size).astype('bool')
+                a = make_onehot(a.numpy(), depth=self.env.action_ndim).astype('bool')
                 value, loss_p, loss_v, loss_ent, loss = \
                     self.train_step(s, a, ad, v, logpi)
-                self.loss = {
-                    "loss_p": loss_p,
-                    "loss_v": loss_v,
-                    "loss_ent": loss_ent,
-                    "loss": loss
-                }
                 self.logs.update(
                     ['v_value', 'loss_p', 'loss_v', 'loss_ent', \
                      'advantage'],
@@ -224,7 +209,7 @@ class PPO(Agent):
 
             if self.flag_ad_normal:
                 mean, var = tf.nn.moments(ad, axes=[0])
-                ad = (ad - mean) / (var + EPS)
+                ad = (ad - mean) / (var + const.EPS)
 
             logpi_now = tf.math.log(tf.reshape(p_now[a], (-1, 1)))
             lograte = logpi_now - logpi
@@ -240,7 +225,7 @@ class PPO(Agent):
                 )
             )
             loss_entropy = -tf.reduce_mean(  # Fix loss Nan: -0*log(0)=0
-                tf.reduce_sum(p_now*tf.math.log(p_now+EPS), axis=1)
+                tf.reduce_sum(p_now*tf.math.log(p_now+const.EPS), axis=1)
             )
             loss = - loss_p_clip \
                    + self.coef_value * loss_v \
@@ -251,8 +236,16 @@ class PPO(Agent):
         self.model.apply_gradients(grads)
         return tf.reduce_mean(v_now), loss_p_clip, loss_v, loss_entropy, loss
     
-    def update_history(self):
-        # self.best_episode.update_best(
-        #     now=self.logs.logs['step'], logs=self.logs.to_dict()
-        # )
-        self.history.update_dict(self.logs.to_dict())
+    def write_tensorboard(self):
+        frame = self.logs.logs['frame']
+        d = self.logs.to_dict(drops=['frame'])
+        for key, value in d.items():
+            if key in chart_log_name: name = 'charts/' + key
+            else: name = 'metrics/' + key
+            if value is not None:
+                self.writer.add_scalar(name, value, frame)
+        self.writer.add_scalar(
+            'charts/SPS',
+            int(((self.data_size-1)//self.batch_size+1)*self.epochs/self.logs.get_time_length()),
+            frame
+        )

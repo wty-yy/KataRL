@@ -9,3 +9,4 @@ memory_size = int(1e6)
 start_fit_size = int(1e4)
 
 batch_size = 4
+episodes = 1000

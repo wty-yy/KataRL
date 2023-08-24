@@ -1,11 +1,12 @@
+from tensorboardX import SummaryWriter
 from agents import Agent
-from agents.constants import PATH
-from agents.constants.A2C import gamma
-from agents.models import Model
+import agents.constants.A2C as const
+from agents.models import BaseModel
 from envs import Env
-from utils.logs_manager import Logs
+from utils.logs import Logs, MeanMetric
 from tqdm import tqdm
 import tensorflow as tf
+import numpy as np
 keras = tf.keras
 
 def get_logs() -> Logs:
@@ -13,8 +14,8 @@ def get_logs() -> Logs:
         init_logs={
             'episode': 0,
             'step': 0,
-            'v_value': keras.metrics.Mean(name='v_value'),
-            'loss': keras.metrics.Mean(name='loss'),
+            'v_value': MeanMetric(),
+            'loss': MeanMetric(),
         }
     )
 
@@ -22,18 +23,21 @@ def expand_dim(state):
     return tf.expand_dims(tf.constant(state), axis=0)
 
 class A2C(Agent):
-    
+
     def __init__(
-            self, env: Env = None,
-            agent_name='A2C', agent_id=0,
-            value_model: Model = None, policy_model: Model = None,
-            episodes=1000, gamma=gamma,  # constants.A2C
+            self, agent_name=None,
+            env: Env = None,
+            value_model: BaseModel = None, policy_model: BaseModel = None,
+            writer: SummaryWriter = None,
+            # hyperparameters
+            episodes=const.episodes,
+            gamma=const.gamma,
             **kwargs
         ):
         models = [value_model, policy_model]
-        super().__init__(env, agent_name, agent_id, episodes, models, **kwargs)
+        super().__init__(agent_name, env, models, writer, **kwargs)
         self.value_model, self.policy_model = value_model, policy_model
-        self.gamma = gamma
+        self.episodes, self.gamma = episodes, gamma
         self.logs = get_logs()
     
     def train(self):
@@ -48,7 +52,7 @@ class A2C(Agent):
                 state = state_
                 if terminal: break
             self.logs.update(['episode', 'step'], [episode, step])
-            self.update_history()
+            self.write_tensorboard()
             if (episode + 1) % 100 == 0:
                 self.value_model.save_weights()
                 self.policy_model.save_weights()
@@ -63,12 +67,15 @@ class A2C(Agent):
                 state = state_
                 if terminal: break
             self.logs.update(['episode', 'step'], [episode, step])
-            self.update_history()
+            self.write_tensorboard()
     
     def act(self, state):
         state = expand_dim(state)
         action_proba = self.policy_model(state)[0]
-        return tf.argmax(action_proba).numpy()
+        # print(action_proba)
+        action = np.random.choice(self.env.action_ndim, p=action_proba.numpy())
+        return action
+        # return tf.argmax(action_proba).numpy()
     
     @tf.function
     def train_step(self, state, action, y):
@@ -94,8 +101,17 @@ class A2C(Agent):
         loss, v_value = self.train_step(state, action, y)
         return loss.numpy(), v_value
     
-    def update_history(self):
-        self.best_episode.update_best(
-            now=self.logs.logs['step'], logs=self.logs.to_dict()
-        )
-        self.history.update_dict(self.logs.to_dict())
+    def write_tensorboard(self):
+        episode = self.logs.logs['episode']
+        d = self.logs.to_dict(drops=['episode'])
+        for key, value in d.items():
+            if key in ['step']: name = 'charts/' + key
+            else: name = 'metrics/' + key
+            if value is not None:
+                self.writer.add_scalar(name, value, episode)
+        if d['loss'] is not None:
+            self.writer.add_scalar(
+                'charts/SPS',
+                int(d['step'] / self.logs.get_time_length()),
+                episode
+            )

@@ -1,4 +1,7 @@
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from envs import Env
+from agents.models import BaseModel
 from agents.constants import PATH
 from tensorboardX import SummaryWriter
 
@@ -29,7 +32,7 @@ class Agent:
             self, 
             agent_name=None,
             env:Env=None,
-            models:list=None,
+            models:list[BaseModel]=None,
             writer:SummaryWriter=None,
             **kwargs
         ):

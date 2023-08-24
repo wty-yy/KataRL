@@ -1,6 +1,5 @@
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import time
+import numpy as np
 
 class MeanMetric():
 
@@ -8,7 +7,10 @@ class MeanMetric():
     mean: float = 0
 
     def update_state(self, value):
-        value = float(value)
+        try:
+            value = float(value)
+        except:
+            value = np.mean(value)
         self.count += 1
         self.mean += (value - self.mean) / self.count
     

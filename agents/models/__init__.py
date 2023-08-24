@@ -2,7 +2,7 @@ from agents.constants import PATH
 import tensorflow as tf
 keras = tf.keras
 
-class BasicModel:
+class BaseModel:
     """
     Model base class.
     You just need rewrite build function, 
@@ -53,7 +53,7 @@ class BasicModel:
 
         self.load_path = None
         if self.load_name is not None and self.load_id is not None:
-            self.load_path = PATH.LOGS.joinpath(self.load_name).joinpath(f"{self.load_id:04}")
+            self.load_path = PATH.LOGS.joinpath(self.load_name+"/checkpoints").joinpath(f"{self.name}-{self.load_id:04}")
 
     def plot_model(self):
         path = PATH.FIGURES.joinpath(f'{self.name}.png')
@@ -69,9 +69,9 @@ class BasicModel:
     def __call__(self, X):
         return self.model(X)
     
-    def save_weights(self, prefix_name=""):
-        if len(prefix_name) != 0: prefix_name += '-'
-        path = PATH.CHECKPOINTS.joinpath(prefix_name+f"{self.save_id:04}")
+    def save_weights(self):
+        # if len(prefix_name) != 0: prefix_name += '-'
+        path = PATH.CHECKPOINTS.joinpath(f"{self.name}-{self.save_id:04}")
         self.model.save_weights(path)
         self.save_id += 1
     

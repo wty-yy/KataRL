@@ -86,6 +86,9 @@ class GymEnv(Env):
         self.envs = gym.vector.AsyncVectorEnv([
             self.make_env(i) for i in range(self.num_envs)
         ])
+        if kwargs.get('neg_rewards'):
+            self.neg_rewards = kwargs['neg_rewards']
+        else: self.neg_rewards = rewards['negative'][self.name]
         self.reset()
     
     def make_env(self, idx):
@@ -94,7 +97,7 @@ class GymEnv(Env):
             if self.capture_video:
                 env = gym.wrappers.RecordVideo(
                     env, "logs/videos",
-                    episode_trigger=lambda _: True,  # capture every episode
+                    episode_trigger=lambda episode: True if (episode+1)%10==0 or episode==0 else False,  # capture 10,20,...
                     name_prefix=f"{idx}"
                 )
             if self.use_atari_wrapper:
@@ -114,11 +117,10 @@ class GymEnv(Env):
         if rewards['positive'][self.name] is not None:
             reward = \
                 np.full_like(reward, rewards['positive'][self.name], dtype='float32')
-        if rewards['negative'][self.name] is not None:
+        if self.neg_rewards is not None:
             # reward[terminal & \
             #        (self.history['step_count'] != self.max_step)] = \
-            reward[terminal ^ truncated] = \
-                rewards['negative'][self.name]
+            reward[terminal ^ truncated] = self.neg_rewards
         self.add_history(['step_count', 'sum_reward'], [1, reward])
         if self.num_envs == 1:
             state, reward, terminal = state[0], reward[0], terminal[0]
