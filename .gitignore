@@ -1,7 +1,7 @@
 __pycache__
 logs
-test*
 .env
 _DEBUG*
 wandb
 *.swp
+old*
