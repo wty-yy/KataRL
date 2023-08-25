@@ -24,8 +24,8 @@ class Parser(ArgumentParser):
             help="if taggled, this experiment will be tracked by WandB")
         self.add_argument("--wandb-project-name", type=str, default="rl-framework",
             help="the wandb's project name")
-        self.add_argument("--train", type=str2bool, default=False, const=True, nargs='?',
-            help="if taggled, the training will be started")
+        self.add_argument("--train", default=False, nargs='*',
+            help="if taggled, the training will be started, you can pass 'run_name' and 'weight_id' like '--evaluate'")
         self.add_argument("--evaluate", default=False, nargs=2,
             help="if taggled, you need pass 'run_name' (in dir '/logs/') and 'weight_id', such like '--evaluate dqn-CartPole_v1-tf_mlp-1-20230823-140730 5'")
         self.add_argument("--capture-video", type=str2bool, default=False, const=True, nargs="?",
@@ -33,6 +33,12 @@ class Parser(ArgumentParser):
     
     def get_args_and_writer(self) -> tuple[NamedTuple, SummaryWriter]:
         args = self.parse_args()
+
+        if isinstance(args.train, list):
+            if len(args.train) == 0: args.train = True
+            elif len(args.train) != 2:
+                raise Exception(f"Error: should only pass two args after '--train', but get '{args.train}'")
+
         if args.evaluate:
             args.load_name, args.load_id = args.evaluate
             args.load_id = int(args.load_id)

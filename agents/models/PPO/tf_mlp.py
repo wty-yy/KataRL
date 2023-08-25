@@ -7,10 +7,7 @@ layers = keras.layers
 class MySchedule(keras.optimizers.schedules.LearningRateSchedule):
     
     def __init__(self, init_lr, per, tot):
-        self.init_lr, self.per, self.tot = \
-            tf.constant(init_lr, dtype='float32'), \
-            tf.constant(per, dtype='float32'), \
-            tf.constant(tot, dtype='float32')
+        self.init_lr, self.per, self.tot = init_lr, per, tot
         self.lr = tf.Variable(init_lr, dtype='float32', trainable=False)
     
     def __call__(self, count):

@@ -1,3 +1,23 @@
+# -*- coding: utf-8 -*-
+'''
+@File    : ppo.py
+@Time    : 2023/08/25 11:12:24
+@Author  : wty-yy
+@Version : 1.0
+@Blog    : https://wty-yy.space/
+@Desc    : 
+
+Experiment commands:
+1. "CartPole-v1": 'python run/PPO/ppo.py --train'
+2. "Breakout-v4":
+'python run/PPO/ppo.py --train --env-name Breakout-v4 --model-name tf_cnn \
+    --epsilon 0.1 --actor-N 8 --frames-M 1e7 --step-T 128 --epochs 4 \
+    --batch-size 256 --coef-value 0.5 --init-lr 2.5e-4'
+'''
+
+if __name__ == '__main__':
+    pass
+
 import sys
 from pathlib import Path
 sys.path.append(str(Path.cwd()))
