@@ -83,7 +83,7 @@ class GymEnv(Env):
         )
         self.use_atari_wrapper = self.name in atari_envs
         if seed is not None: kwargs['seed'] = seed
-        self.envs = gym.vector.AsyncVectorEnv([
+        self.envs = gym.vector.SyncVectorEnv([  # FIX: AsyncVectorEnv is slower than SyncVectorEnv
             self.make_env(i) for i in range(self.num_envs)
         ])
         if kwargs.get('neg_rewards'):
@@ -93,13 +93,16 @@ class GymEnv(Env):
     
     def make_env(self, idx):
         def thunk():
-            env = gym.make(self.name, render_mode='rgb_array')
-            if self.capture_video:
+            if self.capture_video and idx == 0:
+                env = gym.make(self.name, render_mode='rgb_array')  # FIX: render_mods is slower
                 env = gym.wrappers.RecordVideo(
                     env, "logs/videos",
                     episode_trigger=lambda episode: True if (episode+1)%10==0 or episode==0 else False,  # capture 10,20,...
                     name_prefix=f"{idx}"
                 )
+            else:
+                env = gym.make(self.name)
+            env.action_space.seed(self.seed)
             if self.use_atari_wrapper:
                 env = FireResetWrapper(env)
                 env = EpisodeLifeWrapper(env)
@@ -110,23 +113,16 @@ class GymEnv(Env):
     
     def step(self, action):
         self.reset_history()
-        if not isinstance(action, list) and not isinstance(action, np.ndarray):
-            action = [action]
         state, reward, terminal, truncated, _ = self.envs.step(action)
         terminal = terminal | truncated
         if rewards['positive'][self.name] is not None:
             reward = \
                 np.full_like(reward, rewards['positive'][self.name], dtype='float32')
         if self.neg_rewards is not None:
-            # reward[terminal & \
-            #        (self.history['step_count'] != self.max_step)] = \
             reward[terminal ^ truncated] = self.neg_rewards
         self.add_history(['step_count', 'sum_reward'], [1, reward])
-        if self.num_envs == 1:
-            state, reward, terminal = state[0], reward[0], terminal[0]
         state = self.check_state_shape(state)
-        self.last_terminal = terminal.copy()
-        # print(state.shape)
+        self.last_terminal = terminal
         return state, reward, terminal
     
     def reset(self):
@@ -134,7 +130,7 @@ class GymEnv(Env):
         state, _ = self.envs.reset(
             seed=[self.seed+i for i in range(self.num_envs)]
         )
-        if self.num_envs == 1: state = state[0]
+        # if self.num_envs == 1: state = state[0]
         # print("state.shape=",state.shape)
         state = self.check_state_shape(state)
         return state

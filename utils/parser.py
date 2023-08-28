@@ -9,10 +9,10 @@ def str2bool(x):
 
 class Parser(ArgumentParser):
 
-    def __init__(self, algo_name='dqn', env_name='CartPole-v1', model_name='tf_mlp'):
+    def __init__(self, agent_name='dqn', env_name='CartPole-v1', model_name='tf_mlp'):
         super().__init__()
         # parser = argparse.ArgumentParser()
-        self.add_argument("--algo-name", type=str, default=algo_name,
+        self.add_argument("--algo-name", type=str, default=agent_name,
             help="the name of algorithm")
         self.add_argument("--env-name", type=str, default=env_name,
             help="the name of environment")
@@ -22,7 +22,7 @@ class Parser(ArgumentParser):
             help="the seed of experiment")
         self.add_argument("--wandb-track", type=str2bool, default=False, const=True, nargs='?',
             help="if taggled, this experiment will be tracked by WandB")
-        self.add_argument("--wandb-project-name", type=str, default="rl-framework",
+        self.add_argument("--wandb-project-name", type=str, default="KataRL",
             help="the wandb's project name")
         self.add_argument("--train", default=False, nargs='*',
             help="if taggled, the training will be started, you can pass 'run_name' and 'weight_id' like '--evaluate'")
@@ -30,6 +30,8 @@ class Parser(ArgumentParser):
             help="if taggled, you need pass 'run_name' (in dir '/logs/') and 'weight_id', such like '--evaluate dqn-CartPole_v1-tf_mlp-1-20230823-140730 5'")
         self.add_argument("--capture-video", type=str2bool, default=False, const=True, nargs="?",
             help="if taggled, capture the video in multiples of 10")
+        self.add_argument("--num-model-save", type=int, default=10,
+            help="the number of saving the model, uniform distribution in global step")
     
     def get_args_and_writer(self) -> tuple[NamedTuple, SummaryWriter]:
         args = self.parse_args()

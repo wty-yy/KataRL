@@ -1,5 +1,5 @@
 from typing import NamedTuple
-from agents.models import BaseModel
+from agents.models.base import BaseModel
 import tensorflow as tf
 keras = tf.keras
 layers = keras.layers

@@ -1,11 +1,12 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from envs import Env
-from agents.models import BaseModel
+from agents.models.base import BaseModel
 from agents.constants import PATH
 from tensorboardX import SummaryWriter
+from typing import NamedTuple
 
-class Agent:
+class BaseAgent:
     """
     Initialize:
     -   env: The environment that agent interact with.
@@ -30,15 +31,14 @@ class Agent:
     
     def __init__(
             self, 
-            agent_name=None,
-            env:Env=None,
-            models:list[BaseModel]=None,
-            writer:SummaryWriter=None,
-            **kwargs
+            agent_name:str = None,
+            env: Env = None,
+            models: list[BaseModel] = None,
+            writer: SummaryWriter = None,
+            args: NamedTuple = None
         ):
-        self.env, self.agent_name, self.models, self.writer = \
-            env, agent_name, models, writer
-        # self.timestr = get_time_str()
+        self.agent_name, self.env, self.models, self.writer, self.args = \
+            agent_name, env, models, writer, args
 
         # setting logs path early,
         # since history and load_weights will
@@ -71,7 +71,7 @@ class Agent:
         self.writer.close()
 
 if __name__ == '__main__':
-    agent = Agent()
+    agent = BaseAgent()
     agent.best_episode.update_best(10, {'a':1, 'b':2})
     agent.best_episode.update_best(20, {'a':2, 'b':3})
     print(agent.best_episode.best, agent.best_episode.logs)

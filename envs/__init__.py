@@ -65,16 +65,6 @@ class Env():
         if self.last_terminal is not None:
             for key in self.history.keys():
                 self.history[key][self.last_terminal] = 0
-
-    def add_history(self, keys, values):
-        for key, value in zip(keys, values):
-            self.history[key] += value
-    
-    def reset_history(self):
-        if self.last_terminal is not None:
-            for key in self.history.keys():
-                self.history[key][self.last_terminal] = 0
-
     
     def get_terminal_steps(self) -> list:
         return self.history['step_count'][self.last_terminal].tolist()

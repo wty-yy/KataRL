@@ -18,9 +18,9 @@
 '''
 
 from tensorboardX import SummaryWriter
-from agents import Agent
-import agents.constants.PPO as const
-from agents.models import BaseModel
+from agents import BaseAgent
+import agents.constants.ppo as const
+from agents.models.base import BaseModel
 from envs import Env
 from utils.logs import Logs, MeanMetric
 from utils import make_onehot, sample_from_proba
@@ -74,11 +74,7 @@ class Actor:
         for step in range(self.T):
             v, proba = self.pred(self.state)
             V[step] = v.numpy().squeeze()
-            try:
-                action = sample_from_proba(proba)  # check
-            except:
-                np.save("logs/(8,210,160,3)_state.txt", self.state)
-                raise
+            action = sample_from_proba(proba)  # check
             action_one_hot = make_onehot(action, depth=self.env.action_ndim).astype('bool')
             LP[step] = np.log(proba[action_one_hot])
             state_, reward, terminal = self.env.step(action)
@@ -104,7 +100,7 @@ class Actor:
         ds = tf.data.Dataset.from_tensor_slices((S,A,AD,V,LP))
         return ds, terminal_steps, terminal_rewards
 
-class PPO(Agent):
+class PPO(BaseAgent):
 
     def __init__(
             self, agent_name=None,

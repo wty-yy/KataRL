@@ -1,7 +1,7 @@
 from tensorboardX import SummaryWriter
-from agents import Agent
-import agents.constants.A2C as const
-from agents.models import BaseModel
+from agents import BaseAgent
+import agents.constants.a2c as const
+from agents.models.base import BaseModel
 from envs import Env
 from utils.logs import Logs, MeanMetric
 from tqdm import tqdm
@@ -19,23 +19,21 @@ def get_logs() -> Logs:
         }
     )
 
-def expand_dim(state):
-    return tf.expand_dims(tf.constant(state), axis=0)
-
-class A2C(Agent):
+class A2C(BaseAgent):
 
     def __init__(
             self, agent_name=None,
             env: Env = None,
             value_model: BaseModel = None, policy_model: BaseModel = None,
             writer: SummaryWriter = None,
+            seed: int = 1,
             # hyperparameters
             episodes=const.episodes,
             gamma=const.gamma,
             **kwargs
         ):
         models = [value_model, policy_model]
-        super().__init__(agent_name, env, models, writer, **kwargs)
+        super().__init__(agent_name, env, models, writer, seed, **kwargs)
         self.value_model, self.policy_model = value_model, policy_model
         self.episodes, self.gamma = episodes, gamma
         self.logs = get_logs()
@@ -70,7 +68,6 @@ class A2C(Agent):
             self.write_tensorboard()
     
     def act(self, state):
-        state = expand_dim(state)
         action_proba = self.policy_model(state)[0]
         # print(action_proba)
         action = np.random.choice(self.env.action_ndim, p=action_proba.numpy())
@@ -95,7 +92,6 @@ class A2C(Agent):
 
     def fit(self, state, action, reward, state_, terminal):
         y = reward
-        state, state_ = expand_dim(state), expand_dim(state_)
         if not terminal: y += self.gamma * self.value_model(state_)[0]
         # print(state, action)
         loss, v_value = self.train_step(state, action, y)

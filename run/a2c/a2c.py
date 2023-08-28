@@ -2,8 +2,8 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path.cwd()))
 
-from agents.A2C import A2C
-import agents.constants.A2C as const
+from agents.a2c import A2C
+import agents.constants.a2c as const
 from envs.gym_env import GymEnv
 
 import wandb
@@ -29,7 +29,7 @@ def get_args_and_writer():
 
 if __name__ == '__main__':
     args, writer = get_args_and_writer()
-    Model = getattr(import_module(f"agents.models.A2C.{args.model_name}"), "Model")
+    Model = getattr(import_module(f"agents.models.a2c.{args.model_name}"), "Model")
     env = GymEnv(name=args.env_name, capture_video=args.capture_video, neg_rewards=args.neg_rewards)
     
     value_model = Model(
@@ -45,7 +45,7 @@ if __name__ == '__main__':
         input_shape=env.state_shape, output_ndim=env.action_ndim
     )
     a2c = A2C(
-        agent_name=args.run_name, env=env,
+        agent_name=args.run_name, env=env, 
         value_model=value_model, policy_model=policy_model,
         writer=writer, **vars(args)
     )

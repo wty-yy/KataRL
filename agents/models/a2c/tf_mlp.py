@@ -1,4 +1,4 @@
-from agents.models import BaseModel
+from agents.models.base import BaseModel
 import tensorflow as tf
 keras = tf.keras
 layers = keras.layers
@@ -30,3 +30,7 @@ class Model(BaseModel):
     
     def build_optimizer(self, lr):
         return keras.optimizers.Adam(learning_rate=lr)
+    
+    def set_seed(self):
+        super().set_seed()
+        tf.random.set_seed(self.seed)

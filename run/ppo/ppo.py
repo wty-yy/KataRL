@@ -23,8 +23,8 @@ from pathlib import Path
 sys.path.append(str(Path.cwd()))
 
 import wandb
-from agents.PPO import PPO
-import agents.constants.PPO.cartpole as const
+from agents.ppo import PPO
+import agents.constants.ppo.cartpole as const
 from envs.gym_env import GymEnv
 from utils.parser import Parser, str2bool
 from importlib import import_module
@@ -70,7 +70,7 @@ def get_args_and_writer():
 
 if __name__ == '__main__':
     args, writer = get_args_and_writer()
-    Model = getattr(import_module(f"agents.models.PPO.{args.model_name}"), "Model")
+    Model = getattr(import_module(f"agents.models.ppo.{args.model_name}"), "Model")
     env = GymEnv(
         name=args.env_name, seed=args.seed,
         num_envs=args.actor_N,

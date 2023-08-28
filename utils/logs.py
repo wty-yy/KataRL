@@ -1,5 +1,6 @@
 import time
 import numpy as np
+from tensorboardX import SummaryWriter
 
 class MeanMetric():
 
@@ -10,6 +11,7 @@ class MeanMetric():
         try:
             value = float(value)
         except:
+            if len(value) == 0: return
             value = np.mean(value)
         self.count += 1
         self.mean += (value - self.mean) / self.count
@@ -36,6 +38,11 @@ class Logs:
                 'loss': keras.metrics.Mean(name='loss'),
                 'frame': []
             }
+    -   folder2name (dict): match name with the cls folder, such like:
+            folder2name = {
+                'charts': ['episode_length', 'episode_return'],
+                'metrics': ['q_value', 'loss']
+            }
     
     Function
     -   reset(): reset the logs, use it after one episode.
@@ -54,8 +61,9 @@ class Logs:
         MeanMetric
     ]
 
-    def __init__(self, init_logs:dict):
-        self.start_time = time.time()
+    def __init__(self, init_logs:dict, folder2name:dict):
+        self.start_time, self.folder2name = time.time(), folder2name
+        # type check
         for key, value in init_logs.items():
             flag = False
             for type in self.support_type:
@@ -65,7 +73,15 @@ class Logs:
                 raise Exception(
                     f"Error: Don't know {key}'s type '{type(value)}'!"
                 )
+        count = 0
         self.logs = init_logs
+        for _, names in folder2name.items():
+            count += len(names)
+            for name in names:
+                if name not in self.logs.keys():
+                    raise Exception(f"Error: The name '{name}' is not in 'self.logs' {self.logs}")
+        if count != len(self.logs.keys()):
+            raise Exception(f"Error: Some name is not in folder")
     
     def reset(self):
         self.start_time = time.time()
@@ -105,4 +121,12 @@ class Logs:
     
     def get_time_length(self):
         return time.time() - self.start_time
+    
+    def writer_tensorboard(self, writer:SummaryWriter, global_step, drops=[]):
+        d = self.to_dict()
+        for folder, names in self.folder2name.items():
+            for name in names:
+                if name in drops: continue
+                if d[name] is not None:
+                    writer.add_scalar(folder+'/'+name, d[name], global_step)
     
