@@ -1,8 +1,7 @@
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-from envs import Env
-from agents.models.base import BaseModel
-from agents.constants import PATH
+from katarl.envs import Env
+from katarl.agents.models.base import BaseModel
+from katarl.agents.constants import PATH
+
 from tensorboardX import SummaryWriter
 from typing import NamedTuple
 

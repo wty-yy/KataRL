@@ -1,8 +1,8 @@
-# RL-Framework
+# KataRL
 
 ## Introduce 介绍
 
-A testing framework for reinforcement learning, support function:
+A testing framework for reinforcement learning, support this function:
 
 一个用于强化学习模型测试框架，支持以下功能：
 
@@ -10,10 +10,6 @@ A testing framework for reinforcement learning, support function:
 - Training parameters record 训练参数的记录
 - Model weights save and callback 模型权重保存及回调
 - Draw log images 绘制日志图像
-
-To be adding 待添加：
-
-- [ ] Multi-Agent 多智能体
 
 ---
 

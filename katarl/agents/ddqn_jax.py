@@ -8,24 +8,21 @@
 @Desc    : None
 2023.8.26. 用Jax实现DDQN
 2023.8.27. 成功实现，5e5时间步，num-envs=1用时7mins, num-envs=4用时4mins
+2023.8.28. 解决bug,num-envs=1用时2:20,num-env=4用时1min
 
 '''
+from katarl.agents import BaseAgent
+from katarl.agents.models.base.jax_base import JaxModel
+from katarl.utils.logs import Logs, MeanMetric
+from katarl.envs import Env
 
-if __name__ == '__main__':
-    pass
-
+from typing import NamedTuple
 from tensorboardX import SummaryWriter
-from agents import BaseAgent
-import agents.constants.dqn.ddqn as const
-from agents.models.base import BaseModel
-from utils.logs import Logs, MeanMetric
 from tqdm import tqdm
 import time
-from envs import Env
 import jax
 import numpy as np
 import jax.numpy as jnp
-from flax.struct import dataclass
 from flax.training.train_state import TrainState
 from functools import partial
 
@@ -127,12 +124,12 @@ class MemoryCache:
         T(terminal)    |  (1,)              |  bool
     """
 
-    def __init__(self, state_shape, action_shape, memory_size, num_envs, batch_size):
-        self.state_shape, self.action_shape, self.num_envs, self.batch_size = state_shape, action_shape, num_envs, batch_size
+    def __init__(self, state_shape, action_shape, args: NamedTuple):
+        self.state_shape, self.action_shape, self.num_envs, self.batch_size = state_shape, action_shape, args.num_envs, args.batch_size
         self.count = 0
-        self.num_sample_rows = (batch_size-1) // self.num_envs + 1
+        self.num_sample_rows = (self.batch_size-1) // self.num_envs + 1
         self.sample_size = self.num_sample_rows * self.num_envs
-        self.total = (memory_size-1) // self.num_envs + 1
+        self.total = (args.memory_size-1) // self.num_envs + 1
         # use np.ndarray could sample by indexs easily
         self.memory = [
             np.zeros([self.total, self.num_envs, *self.state_shape], dtype='float32'),
@@ -155,114 +152,86 @@ class MemoryCache:
 class Agent(BaseAgent):
 
     def __init__(
-            self, agent_name=None,
+            self,
+            agent_name: str = None,
             env: Env = None,
-            models: list = None,
+            models: list[JaxModel] = None,
             writer: SummaryWriter = None, 
-            seed: int = 1,
-            # hyper-parameters
-            model: BaseModel = None,
-            total_timesteps=const.total_timesteps,
-            num_envs=const.num_envs,
-            batch_size=const.batch_size,
-            gamma=const.gamma,
-            memory_size=const.memory_size,
-            start_fit_size=const.start_fit_size,
-            epsilon_max=const.epsilon_max,
-            epsilon_min=const.epsilon_min,
-            exporation_proportion=const.exporation_proportion,
-            train_frequency=const.train_frequency,
-            target_model_update_frequency=const.target_model_update_frequency,
-            tau=const.tau,
-            write_logs_frequency=const.write_logs_frequency,
-            **kwargs
+            args: NamedTuple = None,
+            # q-value model
+            model: JaxModel = None,
         ):
         models = [model]
-        super().__init__(agent_name, env, models, writer, seed, **kwargs)
+        super().__init__(agent_name, env, models, writer, args)
 
-        # set key
-        # self.key = jax.random.PRNGKey(self.seed)
-        np.random.seed(self.seed)
+        np.random.seed(self.args.seed)
         
         self.model, self.logs = model, init_logs()
-        self.epsilon_max, self.epsilon_min, self.exporation_proportion, self.train_frequency, self.tau, self.target_model_update_frequency, self.write_logs_frequency = \
-            epsilon_max, epsilon_min, exporation_proportion, train_frequency, tau, target_model_update_frequency, write_logs_frequency
-        self.total_timesteps, self.num_envs, self.batch_size, self.gamma, self.memory_size, self.start_fit_size = \
-            total_timesteps, num_envs, batch_size, gamma, memory_size, start_fit_size
-        self.memory = MemoryCache(env.state_shape, env.action_shape, self.memory_size, self.num_envs, self.batch_size)
-        self.slope = (self.epsilon_min - self.epsilon_max) / (self.total_timesteps * self.exporation_proportion)
+        self.memory = MemoryCache(env.state_shape, env.action_shape, args)
 
         self.target_model_params = self.model.state.params.copy()
     
     @partial(jax.jit, static_argnums=0)
     def update_target_model(self, current_params, target_params):
         return jax.tree_map(
-            lambda x, y: self.tau * x + (1-self.tau) * y, 
+            lambda x, y: self.args.tau * x + (1-self.args.tau) * y, 
             current_params, target_params
         )
     
     def update_epsilon(self):
-        self.epsilon = max(self.epsilon_max + self.slope * self.global_step, self.epsilon_min)
+        self.epsilon = max(self.args.epsilon_max + self.args.slope * self.global_step, self.args.epsilon_min)
     
     def train(self):
         state = self.env.reset()
         self.start_time, self.global_step = time.time(), 0
-        num_iters = (self.total_timesteps-1)//self.num_envs+1
-        # for i in tqdm(range(num_iters)):
-        for i in range(num_iters):
-            time1 = time.time()
+        for i in tqdm(range(self.args.num_iters)):
             self.logs.reset()
             self.update_epsilon()
             action = self.act(state)
             state_, reward, terminal = self.env.step(action)
             self.remember(state, action, reward, state_, terminal)
-            self.global_step += self.num_envs
-            print("time1:", time.time() - time1)
+            self.global_step += self.args.num_envs
 
-            if self.global_step > self.start_fit_size:
-                if self.global_step % self.train_frequency < self.num_envs:
-                    time2 = time.time()
+            if self.global_step > self.args.start_fit_size:
+                if self.global_step % self.args.train_frequency < self.args.num_envs:
                     batch = self.memory.sample()
 
                     self.model.state, loss, q_value = self.fit(self.target_model_params, self.model.state, *batch)
                     self.logs.update(['q_value', 'loss'], [q_value, loss])
-                    print("time2:", time.time() - time2)
                     
-                if self.global_step % self.target_model_update_frequency < self.num_envs:
-                    time3 = time.time()
+                if self.global_step % self.args.target_model_update_frequency < self.args.num_envs:
                     self.target_model_params = self.update_target_model(self.model.state.params, self.target_model_params)
-                    print("time3:", time.time() - time3)
 
             state = state_
             self.logs.update(
                 ['episode_step', 'episode_return'],
                 [self.env.get_terminal_steps(), self.env.get_terminal_rewrad()]
             )
-            # if episode end, then we plot it
             self.logs.writer_tensorboard(self.writer, self.global_step, drops=['q_value', 'loss'])
-            # print("time3:", time.time() - time3)
 
-            if (i+1) % self.write_logs_frequency == 0:
+            if (i+1) % self.args.write_logs_frequency == 0:
                 self.write_tensorboard()
-            if self.global_step % int(1e4) < self.num_envs:
+            if (i+1) % (self.args.num_iters // self.args.num_model_save) == 0 or i == self.args.num_iters - 1:
+                print(f"Save weights at global step:", self.global_step)
                 self.model.save_weights()
 
     def evaluate(self):
+        self.epsilon = 0
         state = self.env.reset()
         self.start_time, self.global_step = time.time(), 0
-        self.epsilon = 0
-        num_iters = (self.total_timesteps-1)//self.num_envs+1
-        for i in tqdm(range(num_iters)):
+        for i in tqdm(range(self.args.num_iters)):
             self.logs.reset()
             action = self.act(state)
-            state_, _, _ = self.env.step(action)
-            self.global_step += self.num_envs
+            state_, _, _= self.env.step(action)
+            self.global_step += self.args.num_envs
             state = state_
             self.logs.update(
                 ['episode_step', 'episode_return'],
                 [self.env.get_terminal_steps(), self.env.get_terminal_rewrad()]
             )
-            if i % self.write_logs_frequency == 0:
+            self.logs.writer_tensorboard(self.writer, self.global_step, drops=['q_value', 'loss'])
+
+            if (i+1) % self.args.write_logs_frequency == 0:
                 self.write_tensorboard()
     
     @partial(jax.jit, static_argnums=0)
@@ -273,37 +242,30 @@ class Agent(BaseAgent):
     def act(self, s):  # epsilon choice policy
         rand = np.random.uniform(size=(1,))[0]  # BUG1: there use np is better than jax!
         if rand <= self.epsilon:
-            action = np.random.randint(low=0, high=self.env.action_ndim, size=(self.num_envs,))
+            action = np.random.randint(low=0, high=self.env.action_ndim, size=(self.args.num_envs,))
         else:
             action = jax.device_get(self.get_model_action(self.model.state.params, s))
         return action
 
     def remember(self, state, action, reward, state_, terminal):
         self.memory.update((state, action, reward, state_, terminal))
-
     
     @partial(jax.jit, static_argnums=0)
     def fit(self, target_model_params, state:TrainState, s, a, r, s_, t):
         a, r, t = a.flatten(), r.flatten(), t.flatten()
-        td_target = r + self.gamma * jnp.max(
+        td_target = r + self.args.gamma * jnp.max(
             self.model.state.apply_fn(target_model_params, s_), axis=-1
         ) * (1-t)
-        # q_target = state.apply_fn(state.params, s)
-        # q_target = q_target.at[jnp.arange(self.batch_size), a.squeeze()].set(td_target.squeeze())
 
-        # def train_step(state:TrainState, X, y):
         def loss_fn(params):
             logits = state.apply_fn(params, s)
-            logits = logits[jnp.arange(self.batch_size), a]
+            logits = logits[jnp.arange(self.args.batch_size), a]
             return ((logits - td_target) ** 2).mean(), logits
-            # return loss, logits
 
         loss_grad_fn = jax.value_and_grad(loss_fn, has_aux=True)
         (loss_val, q_value), grads = loss_grad_fn(state.params)
         state = state.apply_gradients(grads=grads)
-        # return state, loss_val, q_value
 
-        # state, loss, q_value = train_step(state, s, q_target)
         return state, loss_val, q_value
     
     def write_tensorboard(self):
@@ -312,6 +274,11 @@ class Agent(BaseAgent):
         self.writer.add_scalar(
             'charts/SPS_avg',
             int(self.global_step / (time.time() - self.start_time)),
+            self.global_step
+        )
+        self.writer.add_scalar(
+            'charts/learning_rate',
+            self.model.state.opt_state[1]['learning_rate'].item(),
             self.global_step
         )
     

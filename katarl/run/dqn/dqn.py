@@ -2,13 +2,13 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path.cwd()))
 
-from agents.dqn import DQN
-import agents.constants.dqn.dqn as const
-from envs.gym_env import GymEnv
+from katarl.agents.dqn import DQN
+import katarl.agents.constants.dqn.dqn as const
+from katarl.envs.gym_env import GymEnv
 import wandb
 
 import importlib
-from utils.parser import Parser
+from katarl.utils.parser import Parser
 
 def get_args_and_writer():
     parser = Parser(algo_name='dqn', env_name='CartPole-v1', model_name='mlp_tf')

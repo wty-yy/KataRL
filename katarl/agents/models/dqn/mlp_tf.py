@@ -1,12 +1,14 @@
+from typing import NamedTuple
+from katarl.agents.models.base.tf_base import TFModel
+
 import tensorflow as tf
 keras = tf.keras
 layers = keras.layers
-from agents.models.base import BaseModel
 
-class Model(BaseModel):
+class Model(TFModel):
     
-    def __init__(self, name='dqn-model', seed=1, lr=0.00025, load_name=None, load_id=None, input_shape=None, output_ndim=None, verbose=True, **kwargs):
-        super().__init__(name, seed, lr, load_name, load_id, input_shape, output_ndim, verbose, **kwargs)
+    def __init__(self, name='dqn-model', input_shape=None, output_ndim=None, args: NamedTuple = None):
+        super().__init__(name, input_shape, output_ndim, args)
 
     def build_model(self):
         inputs = layers.Input(shape=self.input_shape, name='State')
@@ -22,6 +24,3 @@ class Model(BaseModel):
     def set_seed(self):
         tf.random.set_seed(self.seed)
 
-    def plot_model(self, path):
-        print(f"plot model struct png at '{path.absolute()}'")
-        keras.utils.plot_model(self.model, to_file=path, show_shapes=True)

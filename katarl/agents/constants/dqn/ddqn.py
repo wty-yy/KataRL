@@ -1,5 +1,5 @@
 total_timesteps = int(5e5)
-num_envs = 1
+num_envs = 4
 learning_rate = 2.5e-4
 gamma = 0.99  # discount rate
 

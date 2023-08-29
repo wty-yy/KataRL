@@ -1,4 +1,5 @@
 import numpy as np
+from typing import NamedTuple
 
 class Env():
     """
@@ -21,20 +22,19 @@ class Env():
 
     -   render(): Return the render frame of Env.
     """
-    
+
     def __init__(
-            self, name, seed=1, num_envs=1, capture_video=False,
-            max_step=None,
-            state_shape=None, action_shape=None,
-            action_ndim=None, **kwargs
+            self,
+            args: NamedTuple = None,
+            state_shape: tuple = None,
+            action_shape: tuple = None,
+            action_ndim: int = None,
         ):
-        self.name, self.seed, self.num_envs, self.capture_video, self.max_step = \
-            name, seed, num_envs, capture_video, max_step
-        self.state_shape, self.action_shape, self.action_ndim = \
-            state_shape, action_shape, action_ndim
+        self.args, self.state_shape, self.action_shape, self.action_ndim = args, state_shape, action_shape, action_ndim
+        self.name = args.env_name
         self.history = {
-            'step_count': np.zeros(self.num_envs, dtype='int32'),
-            'sum_reward': np.zeros(self.num_envs, dtype='float32'),
+            'step_count': np.zeros(self.args.num_envs, dtype='int32'),
+            'sum_reward': np.zeros(self.args.num_envs, dtype='float32'),
         }
         self.last_terminal = None
     

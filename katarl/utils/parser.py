@@ -1,7 +1,8 @@
+from katarl.utils import get_time_str
+
 import wandb
 from argparse import ArgumentParser
 from tensorboardX import SummaryWriter
-from utils import get_time_str
 from typing import NamedTuple
 
 def str2bool(x):
@@ -9,10 +10,10 @@ def str2bool(x):
 
 class Parser(ArgumentParser):
 
-    def __init__(self, agent_name='dqn', env_name='CartPole-v1', model_name='tf_mlp'):
+    def __init__(self, algo_name='dqn', env_name='CartPole-v1', model_name='tf_mlp'):
         super().__init__()
         # parser = argparse.ArgumentParser()
-        self.add_argument("--algo-name", type=str, default=agent_name,
+        self.add_argument("--algo-name", type=str, default=algo_name,
             help="the name of algorithm")
         self.add_argument("--env-name", type=str, default=env_name,
             help="the name of environment")

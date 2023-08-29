@@ -2,15 +2,15 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path.cwd()))
 
-import agents.constants.dqn.ddqn as const
-from envs.gym_env import GymEnv
+import katarl.agents.constants.dqn.ddqn as const
+from katarl.envs.gym_env import GymEnv
 import wandb
 
 import importlib
-from utils.parser import Parser
+from katarl.utils.parser import Parser, str2bool
 
 def get_args_and_writer():
-    parser = Parser(agent_name='ddqn_jax', env_name='CartPole-v1', model_name='mlp_jax')
+    parser = Parser(algo_name='ddqn_jax', env_name='CartPole-v1', model_name='mlp_jax_mid')
 
     parser.add_argument("--total-timesteps", type=int, default=const.total_timesteps,
         help="the total timesteps the agents interact with the env")
@@ -40,6 +40,8 @@ def get_args_and_writer():
         help="the ratio of the current model and the target model")
     parser.add_argument("--write-logs-frequency", type=int, default=const.write_logs_frequency,
         help="the frequency of writing the logs to tensorboard")
+    parser.add_argument("--anneal-lr", type=str2bool, default=True, const=True, nargs='?',
+        help="is taggled, the learning rate will be linear annealed by global steps")
 
     args, writer = parser.get_args_and_writer()
     args.slope = (args.epsilon_min - args.epsilon_max) / (args.total_timesteps * args.exporation_proportion)
@@ -50,22 +52,15 @@ def get_args_and_writer():
 if __name__ == '__main__':
     args, writer = get_args_and_writer()
 
-    env = GymEnv(
-        name=args.env_name, seed=args.seed,
-        num_envs=args.num_envs,
-        capture_video=args.capture_video
-    )
-    Model = getattr(importlib.import_module(f"agents.models.dqn.{args.model_name}"), "Model")
+    env = GymEnv(args=args)
+    Model = getattr(importlib.import_module(f"katarl.agents.models.dqn.{args.model_name}"), "Model")
     model = Model(
-        seed=args.seed, lr=args.learning_rate,
-        load_name=args.load_name, load_id=args.load_id,
-        input_shape=env.state_shape, output_ndim=env.action_ndim
+        input_shape=env.state_shape, output_ndim=env.action_ndim, args=args
     )
-    Agent = getattr(importlib.import_module(f"agents.{args.algo_name}"), "Agent")
+    Agent = getattr(importlib.import_module(f"katarl.agents.{args.algo_name}"), "Agent")
     ddqn = Agent(
         agent_name=args.run_name, env=env, model=model, writer=writer, args=args
     )
-    print(ddqn)
 
     if args.train:
         ddqn.train()

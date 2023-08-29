@@ -1,17 +1,19 @@
-from agents.constants import PATH
-from agents.models.base import BaseModel
+from katarl.agents.constants import PATH
+from katarl.agents.models.base import BaseModel
+
 from flax.training.train_state import TrainState
 import flax
 import flax.linen as nn
+from typing import NamedTuple
 
 class JaxModel(BaseModel):
 
     model: nn.Module
     state: TrainState
 
-    def __init__(self, name='model', seed=1, lr=0.00025, load_name=None, load_id=None, input_shape=None, output_ndim=None, verbose=True, **kwargs):
-        super().__init__(name, seed, lr, load_name, load_id, input_shape, output_ndim, verbose, **kwargs)
-    
+    def __init__(self, name='model', input_shape=None, output_ndim=None, args: NamedTuple = None):
+        super().__init__(name, input_shape, output_ndim, args)
+
     def load_weights(self):
         if self.load_path is None: return
         print(f"Load weight from '{self.load_path.absolute()}'")

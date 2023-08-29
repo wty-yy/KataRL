@@ -1,6 +1,5 @@
-from agents.constants import PATH
-import numpy as np
-from typing import Any
+from katarl.agents.constants import PATH
+from typing import NamedTuple
 
 class BaseModel:
     """
@@ -37,50 +36,36 @@ class BaseModel:
     """
 
     def __init__(
-            self, name='model', seed=1, lr=2.5e-4,
-            load_name=None, load_id=None, 
+            self, name='model',
             input_shape=None, output_ndim=None,
-            verbose=True, 
-            **kwargs
+            args: NamedTuple = None
         ):
-        self.name, self.seed, self.lr, self.load_name, self.load_id, \
-        self.input_shape, self.output_ndim, self.verbose = \
-            name, seed, lr, load_name, load_id, input_shape, output_ndim, verbose
+        self.name, self.input_shape, self.output_ndim, self.args = name, input_shape, output_ndim, args
         self.set_seed()
         self.save_id = 0
         self.model = self.build_model()
-        self.optimizer = self.build_optimizer(self.lr)
-        if self.load_id is not None:
-            self.save_id = self.load_id + 1
-        if verbose: self.plot_model(PATH.FIGURES.joinpath(f'{self.name}.png'))
+        if self.args.load_id is not None:
+            self.save_id = self.args.load_id + 1
+        self.plot_model(PATH.FIGURES.joinpath(f'{self.name}.png'))
 
         self.load_path = None
-        if self.load_name is not None and self.load_id is not None:
-            self.load_path = PATH.LOGS.joinpath(self.load_name+"/checkpoints").joinpath(f"{self.name}-{self.load_id:04}")
+        if self.args.load_name is not None and self.args.load_id is not None:
+            self.load_path = PATH.LOGS.joinpath(self.args.load_name+"/checkpoints").joinpath(f"{self.name}-{self.args.load_id:04}")
 
     def plot_model(self, path):
         pass
     
-    def build_model(self) -> Any:
+    def build_model(self):
         pass
     
-    def build_optimizer(self, lr) -> Any:
-        pass
-
     def __call__(self, X):
-        return self.model(X)
+        pass
     
     def save_weights(self):
         pass
     
     def load_weights(self):
         pass
-    
-    def get_trainable_weights(self):
-        return self.model.trainable_weights
-    
-    def apply_gradients(self, grads):
-        self.optimizer.apply_gradients(zip(grads, self.model.trainable_weights))
     
     def set_seed(self):
         pass

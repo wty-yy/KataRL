@@ -1,5 +1,6 @@
-from typing import Any
-from agents.models.base.jax_base import JaxModel
+from typing import NamedTuple
+from katarl.agents.models.base.jax_base import JaxModel
+
 import flax.linen as nn
 import jax
 import jax.numpy as jnp
@@ -15,26 +16,32 @@ class MLP(nn.Module):
         x = nn.relu(x)
         x = nn.Dense(84, name='Dense2')(x)
         x = nn.relu(x)
-        # x = nn.Dense(64, name='Dense3')(x)
-        # x = nn.relu(x)
         outputs = nn.Dense(self.output_ndim, name='Output')(x)
         return outputs
 
+
+
 class Model(JaxModel):
-    
-    def __init__(self, name='dqn-model', seed=1, lr=0.00025, load_name=None, load_id=None, input_shape=None, output_ndim=None, verbose=True, **kwargs):
-        super().__init__(name, seed, lr, load_name, load_id, input_shape, output_ndim, verbose, **kwargs)
+
+    def __init__(self, name='dqn-model', input_shape=None, output_ndim=None, args: NamedTuple = None):
+        super().__init__(name, input_shape, output_ndim, args)
 
     def set_seed(self):
-        self.key = jax.random.PRNGKey(seed=self.seed)
+        self.key = jax.random.PRNGKey(seed=self.args.seed)
         self.key, self.model_key = jax.random.split(self.key)
 
     def build_model(self):
         model = MLP(output_ndim=self.output_ndim)
+        def linear_schedule(count):
+            frac = 1. - count * self.args.train_frequency / (self.args.total_timesteps - self.args.start_fit_size)
+            return self.args.learning_rate * frac
         self.state = TrainState.create(
             apply_fn=model.apply,
             params=model.init(self.model_key, jnp.empty(self.input_shape)),
-            tx=optax.adam(learning_rate=self.lr)
+            tx=optax.inject_hyperparams(optax.adam)(
+                learning_rate=linear_schedule if self.args.anneal_lr else self.args.learning_rate, eps=1e-5
+            )
+            # optax.adam(learning_rate=self.args.learning_rate)
         )
         return model
     
