@@ -1,5 +1,5 @@
 from typing import NamedTuple
-from agents.models.base import BaseModel
+from katarl.agents.models.base.base_tf import TFModel
 import tensorflow as tf
 keras = tf.keras
 layers = keras.layers
@@ -18,25 +18,10 @@ class MySchedule(keras.optimizers.schedules.LearningRateSchedule):
         ) * self.init_lr)
         return self.lr
 
-class Model(BaseModel):
+class Model(TFModel):
 
-    def __init__(
-            self, lr=None, 
-            load_name=None, load_id=None,
-            verbose=True, name='model',
-            input_shape=None, output_ndim=None,
-            args : NamedTuple = None,
-            **kwargs
-        ):
-        if args.flag_anneal_lr:
-            linear_schedule = MySchedule(
-                init_lr=args.init_lr,
-                per=((args.data_size-1)//args.batch_size+1) * args.epochs,
-                tot=args.iter_nums
-            )
-            lr = linear_schedule
-        else: lr = args.init_lr
-        super().__init__(lr, load_name, load_id, verbose, name, input_shape, output_ndim, **kwargs)
+    def __init__(self, name='model', input_shape=None, output_ndim=None, args: NamedTuple = None):
+        super().__init__(name, input_shape, output_ndim, args)
 
     def build_model(self):
         inputs = layers.Input(shape=self.input_shape, name='State')
@@ -50,9 +35,14 @@ class Model(BaseModel):
         proba = layers.Dense(self.output_ndim, activation='softmax', name='Action-Proba')(x)
         return keras.Model(inputs, [value, proba], name=self.name)
 
-    def build_optimizer(self, lr):
-        return keras.optimizers.Adam(learning_rate=lr)
+    def build_optimizer(self):
+        if self.args.flag_anneal_lr:
+            linear_schedule = MySchedule(
+                init_lr=self.args.learning_rate,
+                per=((self.args.data_size-1)//self.args.batch_size+1) * self.args.epochs,
+                tot=self.args.num_iters
+            )
+            self.lr = linear_schedule
+        else: self.lr = self.args.learning_rate
+        return keras.optimizers.Adam(learning_rate=self.lr)
     
-    def set_seed(self):
-        super().set_seed()
-        tf.random.set_seed(self.seed)

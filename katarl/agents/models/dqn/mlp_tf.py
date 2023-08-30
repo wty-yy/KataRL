@@ -1,5 +1,5 @@
 from typing import NamedTuple
-from katarl.agents.models.base.tf_base import TFModel
+from katarl.agents.models.base.base_tf import TFModel
 
 import tensorflow as tf
 keras = tf.keras

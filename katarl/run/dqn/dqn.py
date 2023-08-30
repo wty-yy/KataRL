@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path.cwd()))
 
-from katarl.agents.dqn import DQN
+from katarl.agents.dqn_tf import DQN
 import katarl.agents.constants.dqn.dqn as const
 from katarl.envs.gym_env import GymEnv
 import wandb

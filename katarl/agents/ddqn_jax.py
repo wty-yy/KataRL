@@ -12,7 +12,7 @@
 
 '''
 from katarl.agents import BaseAgent
-from katarl.agents.models.base.jax_base import JaxModel
+from katarl.agents.models.base.base_jax import JaxModel
 from katarl.utils.logs import Logs, MeanMetric
 from katarl.envs import Env
 
@@ -205,7 +205,7 @@ class Agent(BaseAgent):
             state = state_
             self.logs.update(
                 ['episode_step', 'episode_return'],
-                [self.env.get_terminal_steps(), self.env.get_terminal_rewrad()]
+                [self.env.get_terminal_steps(), self.env.get_terminal_reward()]
             )
             self.logs.writer_tensorboard(self.writer, self.global_step, drops=['q_value', 'loss'])
 
@@ -227,7 +227,7 @@ class Agent(BaseAgent):
             state = state_
             self.logs.update(
                 ['episode_step', 'episode_return'],
-                [self.env.get_terminal_steps(), self.env.get_terminal_rewrad()]
+                [self.env.get_terminal_steps(), self.env.get_terminal_reward()]
             )
             self.logs.writer_tensorboard(self.writer, self.global_step, drops=['q_value', 'loss'])
 

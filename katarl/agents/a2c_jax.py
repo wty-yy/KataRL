@@ -1,5 +1,5 @@
 from katarl.agents import BaseAgent
-from katarl.agents.models.base.jax_base import JaxModel
+from katarl.agents.models.base.base_jax import JaxModel
 from katarl.envs import Env
 from katarl.utils.logs import Logs, MeanMetric
 
@@ -64,11 +64,10 @@ class Agent(BaseAgent):
             state_, reward, terminal = self.env.step(action)
             self.value_model.state, self.policy_model.state, loss, v_value = \
                 self.fit(self.target_model_params, self.value_model.state, self.policy_model.state, state, action, reward, state_, terminal)
-            self.logs.update(['v_value', 'loss'], [v_value, loss])
             state = state_
             self.logs.update(
-                ['episode_step', 'episode_return'],
-                [self.env.get_terminal_steps(), self.env.get_terminal_rewrad()]
+                ['episode_step', 'episode_return', 'v_value', 'loss'],
+                [self.env.get_terminal_steps(), self.env.get_terminal_reward(), v_value, loss]
             )
             self.logs.writer_tensorboard(self.writer, self.global_step, drops=['v_value', 'loss'])
             if (self.global_step + 1) % self.args.target_model_update_frequency == 0:

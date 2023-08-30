@@ -1,5 +1,5 @@
 from typing import NamedTuple
-from katarl.agents.models.base.jax_base import JaxModel
+from katarl.agents.models.base.base_jax import JaxModel
 
 import flax.linen as nn
 import jax

@@ -69,7 +69,7 @@ class Env():
     def get_terminal_steps(self) -> list:
         return self.history['step_count'][self.last_terminal].tolist()
 
-    def get_terminal_rewrad(self) -> list:
+    def get_terminal_reward(self) -> list:
         return self.history['sum_reward'][self.last_terminal].tolist()
     
     def close(self):

@@ -1,4 +1,4 @@
-from katarl.agents.models.base.tf_base import TFModel
+from katarl.agents.models.base.base_tf import TFModel
 
 from typing import NamedTuple
 import tensorflow as tf

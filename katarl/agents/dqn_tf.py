@@ -138,7 +138,7 @@ class DQN(BaseAgent):
             state = state_
             self.logs.update(
                 ['episode_step', 'episode_return'],
-                [self.env.get_terminal_steps(), self.env.get_terminal_rewrad()]
+                [self.env.get_terminal_steps(), self.env.get_terminal_reward()]
             )
             # if episode end, then we plot it
             self.logs.writer_tensorboard(self.writer, self.global_step, drops=['q_value', 'loss'])
@@ -161,7 +161,7 @@ class DQN(BaseAgent):
             state = state_
             self.logs.update(
                 ['episode_step', 'episode_return'],
-                [self.env.get_terminal_steps(), self.env.get_terminal_rewrad()]
+                [self.env.get_terminal_steps(), self.env.get_terminal_reward()]
             )
             if (i+1) % self.write_logs_frequency == 0:
                 self.write_tensorboard()

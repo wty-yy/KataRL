@@ -57,41 +57,43 @@ class GymEnv(Env):
 
     def __init__(self, args: NamedTuple = None):
 
-        name = args.env_name
+        self.name, self.args = args.env_name, args
+        if vars(args).get('num_envs') is None: args.num_envs = 1
         # if max_step.get(name) is None:
         #     raise Exception(f"Don't know the max_step of the environment: '{name}'")
-        if state_shape.get(name) is None:
-            raise Exception(f"Don't know the state_shape of the environment: '{name}'")
-        if action_shape.get(name) is None:
-            raise Exception(f"Don't know the action_shape of the environment: '{name}'")
-        if action_ndim.get(name) is None:
-            raise Exception(f"Don't know the action_size of the environment: '{name}'")
+        # if state_shape.get(name) is None:
+        #     raise Exception(f"Don't know the state_shape of the environment: '{name}'")
+        # if action_shape.get(name) is None:
+        #     raise Exception(f"Don't know the action_shape of the environment: '{name}'")
+        # if action_ndim.get(name) is None:
+        #     raise Exception(f"Don't know the action_size of the environment: '{name}'")
         # if rewards['positive'].get(name) is None:
         #     raise Exception(f"Don't know the positive reward of the environment: '{name}'")
         # if rewards['negative'].get(name) is None:
         #     raise Exception(f"Don't know the negative reward of the environment: '{name}'")
 
-        super().__init__(
-            args,
-            state_shape=state_shape[name],
-            action_shape=action_shape[name],
-            action_ndim=action_ndim[name],
-        )
         self.use_atari_wrapper = self.name in atari_envs
         self.envs = gym.vector.SyncVectorEnv([  # FIX: AsyncVectorEnv is slower than SyncVectorEnv
-            self.make_env(i) for i in range(self.num_envs)
+            self.make_env(i) for i in range(args.num_envs)
         ])
         if vars(args).get('neg_rewards'):
             self.neg_rewards = args.neg_rewards
-        else: self.neg_rewards = rewards['negative'][self.name]
+        else: self.neg_rewards = rewards['negative'].get(self.name)
+        super().__init__(
+            args,
+            state_shape=self.envs.single_observation_space.shape,
+            action_shape=(1,),
+            action_ndim=self.envs.single_action_space.n,
+        )
     
     def make_env(self, idx):
         def thunk():
+            is_pow2 = lambda x: x == int(2**int(np.log2(x)))
             if self.args.capture_video and idx == 0:
                 env = gym.make(self.name, render_mode='rgb_array')  # FIX: render_mods is slower
                 env = gym.wrappers.RecordVideo(
                     env, "logs/videos",
-                    episode_trigger=lambda episode: True if (episode+1)%10==0 or episode==0 else False,  # capture 10,20,...
+                    episode_trigger=lambda episode: True if is_pow2(episode+1) or episode % 128 == 0 else False,  # capture 1,2,4,8,...,512,N*1024
                     name_prefix=f"{idx}"
                 )
             else:
@@ -109,7 +111,7 @@ class GymEnv(Env):
         self.reset_history()
         state, reward, terminal, truncated, _ = self.envs.step(action)
         terminal = terminal | truncated
-        if rewards['positive'][self.name] is not None:
+        if rewards['positive'].get(self.name) is not None:
             reward = np.full_like(reward, rewards['positive'][self.name], dtype='float32')
         if self.neg_rewards is not None:
             reward[terminal ^ truncated] = self.neg_rewards

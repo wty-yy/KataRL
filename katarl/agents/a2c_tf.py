@@ -1,5 +1,5 @@
 from katarl.agents import BaseAgent
-from katarl.agents.models.base.tf_base import TFModel
+from katarl.agents.models.base.base_tf import TFModel
 from katarl.envs import Env
 from katarl.utils.logs import Logs, MeanMetric
 
@@ -55,7 +55,7 @@ class Agent(BaseAgent):
             state = state_
             self.logs.update(
                 ['episode_step', 'episode_return'],
-                [self.env.get_terminal_steps(), self.env.get_terminal_rewrad()]
+                [self.env.get_terminal_steps(), self.env.get_terminal_reward()]
             )
             self.logs.writer_tensorboard(self.writer, self.global_step, drops=['v_value', 'loss'])
             if (self.global_step + 1) % self.args.write_logs_frequency == 0:

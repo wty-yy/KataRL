@@ -104,7 +104,7 @@ class Logs:
                     target.update_state(value)
                 elif isinstance(target, list):
                     target.append(value)
-                else: # int or float
+                else: # int or float or None
                     self.logs[key] = value
 
     def to_dict(self, drops:list=None):
