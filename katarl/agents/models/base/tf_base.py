@@ -15,7 +15,7 @@ class TFModel(BaseModel):
 
     def __init__(self, name='model', input_shape=None, output_ndim=None, args: NamedTuple = None):
         super().__init__(name, input_shape, output_ndim, args)
-        self.optimizer = self.build_optimizer(self.args.learning_rate)
+        self.optimizer = self.build_optimizer()
 
     def load_weights(self):
         if self.load_path is None: return
@@ -40,5 +40,8 @@ class TFModel(BaseModel):
     def apply_gradients(self, grads):
         self.optimizer.apply_gradients(zip(grads, self.model.trainable_weights))
     
-    def build_optimizer(self, lr):
+    def build_optimizer(self):
         pass
+
+    def set_seed(self):
+        tf.random.set_seed(self.args.seed)

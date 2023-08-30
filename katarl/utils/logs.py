@@ -40,7 +40,7 @@ class Logs:
             }
     -   folder2name (dict): match name with the cls folder, such like:
             folder2name = {
-                'charts': ['episode_length', 'episode_return'],
+                'charts': ['episode_step', 'episode_return'],
                 'metrics': ['q_value', 'loss']
             }
     

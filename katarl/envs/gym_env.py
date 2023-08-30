@@ -79,7 +79,7 @@ class GymEnv(Env):
         )
         self.use_atari_wrapper = self.name in atari_envs
         self.envs = gym.vector.SyncVectorEnv([  # FIX: AsyncVectorEnv is slower than SyncVectorEnv
-            self.make_env(i) for i in range(self.args.num_envs)
+            self.make_env(i) for i in range(self.num_envs)
         ])
         if vars(args).get('neg_rewards'):
             self.neg_rewards = args.neg_rewards
@@ -121,7 +121,7 @@ class GymEnv(Env):
     def reset(self):
         super().reset()  # reset step_count
         state, _ = self.envs.reset(
-            seed=[self.args.seed+i for i in range(self.args.num_envs)]
+            seed=[self.args.seed+i for i in range(self.num_envs)]
         )
         state = self.check_state_shape(state)
         return state

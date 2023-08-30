@@ -1,5 +1,9 @@
-gamma = 0.95  # discount rate
-
-learning_rate_v = 1e-3  # v-value model
+total_timesteps = int(5e5)
+learning_rate_v = 1e-4  # v-value model
 learning_rate_p = 1e-5  # policy model
-episodes = 1000
+gamma = 0.99  # discount rate
+neg_rewards = -20
+write_logs_frequency = 10
+anneal_lr = False
+target_model_update_frequency = 500
+tau = 1.

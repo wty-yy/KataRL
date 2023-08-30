@@ -31,10 +31,10 @@ class Env():
             action_ndim: int = None,
         ):
         self.args, self.state_shape, self.action_shape, self.action_ndim = args, state_shape, action_shape, action_ndim
-        self.name = args.env_name
+        self.name, self.num_envs = args.env_name, self.args.num_envs if vars(args).get('num_envs') else 1
         self.history = {
-            'step_count': np.zeros(self.args.num_envs, dtype='int32'),
-            'sum_reward': np.zeros(self.args.num_envs, dtype='float32'),
+            'step_count': np.zeros(self.num_envs, dtype='int32'),
+            'sum_reward': np.zeros(self.num_envs, dtype='float32'),
         }
         self.last_terminal = None
     
