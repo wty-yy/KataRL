@@ -14,4 +14,4 @@ batch_size = 128
 train_frequency = 10
 target_model_update_frequency = 500
 tau = 1.
-write_logs_frequency = 10
+write_logs_frequency = 1000
