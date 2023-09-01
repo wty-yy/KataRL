@@ -117,20 +117,18 @@ class Agent(BaseAgent):
         self.logs = get_logs()
         self.actor = Actor(self.env, self.model, args)
 
-        self.key = jax.random.PRNGKey(self.args.seed)  # use np for random the dataset training idxs
+        np.random.seed(self.args.seed)  # use np for random the dataset training idxs
     
     def train(self):
         self.start_time = time.time()
         for i in tqdm(range(self.args.num_iters)):
-            self.global_step = (i+1) * self.args.data_size
             self.logs.reset()
-            dataset, steps, rewards = self.actor.act()
-            self.key, self.model.state, (v, ad, loss_p, loss_v, loss_ent) = \
-                self.fit(self.key, self.model.state, dataset)
-            max_reward = 0 if len(rewards) == 0 else int(np.max(rewards))
+            steps, rewards = self.fit()
+            self.global_step = (i+1) * self.args.data_size
+            max_reward = None if len(rewards) == 0 else int(np.max(rewards))
             self.logs.update(
-                ['episode_step', 'episode_return', 'max_reward', 'learning_rate', 'v_value', 'ad_value', 'loss_p', 'loss_v', 'loss_ent'],
-                [steps, rewards, max_reward, self.model.state.opt_state[1][1]['learning_rate'], v, ad, loss_p, loss_v, loss_ent]
+                ['episode_step', 'episode_return', 'max_reward', 'learning_rate'],
+                [steps, rewards, max_reward, self.model.state.opt_state[1][1]['learning_rate']]
             )
             self.write_tensorboard()
             if (i + 1) % 10 == 0:
@@ -149,16 +147,20 @@ class Agent(BaseAgent):
             )
             self.write_tensorboard()
 
-    @partial(jax.jit, static_argnums=0)
-    def fit(self, key, state:TrainState, dataset):
+    def fit(self):
+        dataset, steps, rewards = self.actor.act()
         for _ in range(self.args.epochs):
-            key, subkey = jax.random.split(key)
-            idxs = jax.random.permutation(subkey, self.args.data_size)
+            idxs = np.random.permutation(self.args.data_size)
             for i in range(0, self.args.data_size, self.args.batch_size):
-                state, metrics = self.train_step(state, dataset, idxs[i:i+self.args.batch_size])
-        return key, state, metrics
+                self.model.state, (v, ad, loss_p, loss_v, loss_ent) = \
+                    self.train_step(self.model.state, dataset, idxs[i:i+self.args.batch_size])
+                self.logs.update(
+                    ['v_value', 'ad_value', 'loss_p', 'loss_v', 'loss_ent'],
+                    [v, ad, loss_p, loss_v, loss_ent]
+                )
+        return steps, rewards
     
-    # @partial(jax.jit, static_argnums=0)
+    @partial(jax.jit, static_argnums=0)
     def train_step(self, state:TrainState, dataset, idxs):
         def loss_fn(params, dataset, idxs):
             s, a, ad, v, logpi = jax.tree_map(lambda x: x[idxs], dataset)
@@ -180,9 +182,9 @@ class Agent(BaseAgent):
             ).mean()
 
             # normalize the logits https://gregorygundersen.com/blog/2020/02/09/log-sum-exp/            
-            log_p = logits - jax.scipy.special.logsumexp(logits, axis=-1, keepdims=True)
-            log_p = log_p.clip(min=jnp.finfo(log_p.dtype).min)
-            loss_entropy = - (log_p * jax.nn.softmax(logits)).sum(-1).mean()
+            # log_p = logits - jax.scipy.special.logsumexp(logits, axis=-1, keepdims=True)
+            # log_p = log_p.clip(min=jnp.finfo(log_p.dtype).min)
+            loss_entropy = - (jax.nn.log_softmax(logits) * jax.nn.softmax(logits)).sum(-1).mean()
         
             loss = - loss_p \
                    + self.args.coef_value * loss_v \
