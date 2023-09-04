@@ -99,11 +99,13 @@ class GymEnv(Env):
             else:
                 env = gym.make(self.name)
             env.action_space.seed(self.args.seed)
+            env.observation_space.seed(self.args.seed)
             if self.use_atari_wrapper:
-                env = FireResetWrapper(env)
                 env = EpisodeLifeWrapper(env)
-                # env = gym.wrappers.GrayScaleObservation(env)
-                # env = gym.wrappers.FrameStack(env, 4)
+                env = FireResetWrapper(env)
+                env = gym.wrappers.ResizeObservation(env, (84, 84))
+                env = gym.wrappers.GrayScaleObservation(env)
+                env = gym.wrappers.FrameStack(env, 4)
             return env
         return thunk
     
