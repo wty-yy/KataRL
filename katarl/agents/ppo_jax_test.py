@@ -84,7 +84,7 @@ class Actor:
             S[i], A[i], R[i], S_[i], T[i] = \
                 self.state, action, reward, state_, terminal
             self.state = state_
-            terminal_steps += self.env.get_terminal_steps()
+            terminal_steps += self.env.get_terminal_length()
             terminal_rewards += self.env.get_terminal_reward()
         v_last, _ = self.pred(self.model.state.params, self.state)
         v_last = v_last.reshape(1, self.col)

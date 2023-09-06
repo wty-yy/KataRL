@@ -1,18 +1,14 @@
 # -*- coding: utf-8 -*-
 '''
 @File    : ppo.py
-@Time    : 2023/08/25 11:12:24
+@Time    : 2023/09/04 11:12:24
 @Author  : wty-yy
 @Version : 1.0
 @Blog    : https://wty-yy.space/
 @Desc    : 
 
-Experiment commands:
-1. "CartPole-v1": 'python run/PPO/ppo.py --train'
-2. "Breakout-v4":
-'python run/PPO/ppo.py --train --env-name Breakout-v4 --model-name tf_cnn \
-    --epsilon 0.1 --actor-N 8 --frames-M 1e7 --step-T 128 --epochs 4 \
-    --batch-size 256 --coef-value 0.5 --init-lr 2.5e-4'
+2023.09.05. 重新实现ppo atari
+2023.09.06. BUG: seed相同无法复现相同结果
 '''
 
 if __name__ == '__main__':
@@ -22,7 +18,7 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path.cwd()))
 
-import katarl.agents.constants.ppo as const
+import katarl.agents.constants.ppo.atari as const
 from katarl.envs.gym_env import GymEnv
 from katarl.utils.parser import Parser, str2bool
 
@@ -30,7 +26,7 @@ import wandb
 from importlib import import_module
 
 def get_args_and_writer():
-    parser = Parser(algo_name='ppo_jax', env_name='CartPole-v1', model_name='mlp_jax')
+    parser = Parser(algo_name='ppo_jax', env_name='BreakoutNoFrameskip-v4', model_name='cnn_jax')
     # hyperparameters
     parser.add_argument("--gamma", type=float, default=const.gamma,
         help="the discount rate of the return")
@@ -66,6 +62,8 @@ def get_args_and_writer():
         help="the maximum norm for the gradient clipping")
     parser.add_argument("--EPS", type=float, default=const.EPS,
         help="the epsilone size of accuracy error")
+    parser.add_argument("--flag-anneal-reward", type=str2bool, default=const.flag_anneal_reward, const=True, nargs='?',
+        help="if taggled, the reward will be anneal by the game lives")
     
     args, writer = parser.get_args_and_writer()
     args.data_size = args.num_envs * args.num_steps  # each update datasize
@@ -78,7 +76,7 @@ if __name__ == '__main__':
     env = GymEnv(args=args)
     model = Model(
         name='ppo-model',
-        input_shape=env.state_shape,
+        input_shape=(args.num_envs, 4, 84, 84),
         output_ndim=env.action_ndim,
         args=args
     )

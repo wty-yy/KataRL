@@ -1,6 +1,7 @@
 from katarl.agents.constants import PATH
 from katarl.agents.models.base import BaseModel
 
+import jax, jax.numpy as jnp
 from flax.training.train_state import TrainState
 import flax
 import flax.linen as nn
@@ -25,3 +26,6 @@ class JaxModel(BaseModel):
         with open(path, 'wb') as file:
             file.write(flax.serialization.to_bytes(self.state))
         self.save_id += 1
+    
+    def plot_model(self, path):
+        print(self.model.tabulate(jax.random.PRNGKey(42), jnp.empty(self.input_shape)))

@@ -15,7 +15,7 @@ class PathManager:
         # self.HISTORY = Path()
         self.CHECKPOINTS = Path()
 
-    def get_logs_path(self, agent_name):
+    def get_logs_path(self, agent_name: str):
         self.AGENT = mkdir(self.LOGS.joinpath(f"{agent_name}"))
         # self.HISTORY = mkdir(self.AGENT.joinpath(f"history-{agent_id:04}"))
         self.CHECKPOINTS = mkdir(self.AGENT.joinpath(f"checkpoints"))

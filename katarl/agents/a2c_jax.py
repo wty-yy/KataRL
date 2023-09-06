@@ -67,7 +67,7 @@ class Agent(BaseAgent):
             state = state_
             self.logs.update(
                 ['episode_step', 'episode_return', 'v_value', 'loss'],
-                [self.env.get_terminal_steps(), self.env.get_terminal_reward(), v_value, loss]
+                [self.env.get_terminal_length(), self.env.get_terminal_reward(), v_value, loss]
             )
             self.logs.writer_tensorboard(self.writer, self.global_step, drops=['v_value', 'loss'])
             if (self.global_step + 1) % self.args.target_model_update_frequency == 0:

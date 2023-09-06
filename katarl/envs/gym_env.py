@@ -3,6 +3,7 @@ from katarl.envs import Env
 from katarl.envs.atari_wrappers import (
     FireResetWrapper, 
     EpisodeLifeWrapper,
+    MaxAndSkipEnv
 )
 
 import gymnasium as gym
@@ -12,6 +13,7 @@ INF = int(1e18)
 
 atari_envs = [
     "Breakout-v4",
+    'BreakoutNoFrameskip-v4',
     "ALE/Breakout-v5"
 ]
 
@@ -21,12 +23,6 @@ atari_envs = [
 #     "Breakout-v4": INF,
 #     "ALE/Breakout-v5": INF,
 # }
-state_shape = {
-    "CartPole-v1": (4,),
-    # DELIT: Atari env has GrayColor and 4 frames stack
-    "Breakout-v4": (210, 160, 3),
-    "ALE/Breakout-v5": (210, 160, 3),
-}
 action_shape = {
     "CartPole-v1": (1,),
     "Breakout-v4": (1,),
@@ -93,15 +89,19 @@ class GymEnv(Env):
                 env = gym.make(self.name, render_mode='rgb_array')  # FIX: render_mods is slower
                 env = gym.wrappers.RecordVideo(
                     env, "logs/videos",
-                    episode_trigger=lambda episode: True if is_pow2(episode+1) or episode % 128 == 0 else False,  # capture 1,2,4,8,...,512,N*1024
-                    name_prefix=f"{idx}"
+                    episode_trigger=lambda episode: True if is_pow2(episode+1) or (episode+1) % 128 == 0 else False,  # capture 1,2,4,8,...,64,N*128
+                    name_prefix=f"{idx}",
+                    # disable_logger=True
                 )
             else:
                 env = gym.make(self.name)
+            env = gym.wrappers.RecordEpisodeStatistics(env)
+            env.metadata['render_fps'] = self.args.fps
             env.action_space.seed(self.args.seed)
             env.observation_space.seed(self.args.seed)
             if self.use_atari_wrapper:
-                env = EpisodeLifeWrapper(env)
+                env = MaxAndSkipEnv(env, skip=4)
+                env = EpisodeLifeWrapper(env, anneal_reward=True)
                 env = FireResetWrapper(env)
                 env = gym.wrappers.ResizeObservation(env, (84, 84))
                 env = gym.wrappers.GrayScaleObservation(env)
@@ -111,14 +111,13 @@ class GymEnv(Env):
     
     def step(self, action):
         self.reset_history()
-        state, reward, terminal, truncated, _ = self.envs.step(action)
+        state, reward, terminal, truncated, self.last_info = self.envs.step(action)
         terminal = terminal | truncated
         if rewards['positive'].get(self.name) is not None:
             reward = np.full_like(reward, rewards['positive'][self.name], dtype='float32')
         if self.neg_rewards is not None:
             reward[terminal ^ truncated] = self.neg_rewards
-        self.add_history(['step_count', 'sum_reward'], [1, reward])
-        state = self.check_state_shape(state)
+        self.add_history(['sum_length', 'sum_reward'], [1, reward])
         self.last_terminal = terminal
         return state, reward, terminal
     
@@ -127,17 +126,7 @@ class GymEnv(Env):
         state, _ = self.envs.reset(
             seed=[self.args.seed+i for i in range(self.num_envs)]
         )
-        state = self.check_state_shape(state)
         return state
-    
-    def check_state_shape(self, state):
-        if self.use_atari_wrapper:
-            # (8, 4, 210, 160) -> (8, 210, 160, 4)
-            state = state.reshape(self.num_envs, *self.state_shape)
-        return state
-
-    def render(self):
-        return self.envs.render()
     
     def close(self):
         self.envs.close()

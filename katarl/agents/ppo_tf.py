@@ -84,7 +84,7 @@ class Actor:
             S[step], A[step], R[step], S_[step], T[step] = \
                 self.state, action, reward, state_, terminal
             self.state = state_
-            terminal_steps += self.env.get_terminal_steps()
+            terminal_steps += self.env.get_terminal_length()
             terminal_rewards += self.env.get_terminal_reward()
             # max_step = int(max(max_step, self.env.step_count.max()))
         v_last, _ = self.pred(self.state)

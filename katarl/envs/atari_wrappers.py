@@ -30,10 +30,12 @@ class EpisodeLifeWrapper(gym.Wrapper):
     all lives used, the env will be reseted, that is `game over`.
     """
     
-    def __init__(self, env: gym.Env):
+    def __init__(self, env: gym.Env, anneal_reward=False):
         super().__init__(env)
         self.lives = 0
         self.game_over = True
+        self.anneal_reward = anneal_reward
+        
     
     def step(self, action):
         state, reward, terminal, truncated, info = self.env.step(action)
@@ -43,6 +45,7 @@ class EpisodeLifeWrapper(gym.Wrapper):
         if 0 < lives < self.lives:
             terminal = True
         self.lives = lives  # update lives
+        if self.anneal_reward: reward *= 1 / (6-self.lives)
         return state, reward, terminal, truncated, info
     
     def reset(self, **kwargs):
@@ -56,3 +59,40 @@ class EpisodeLifeWrapper(gym.Wrapper):
                 state, info = self.env.reset(**kwargs)
         self.lives = info['lives']
         return state, info
+
+class MaxAndSkipEnv(gym.Wrapper):
+    """
+    Return only every ``skip``-th frame (frameskipping)
+
+    :param env: the environment
+    :param skip: number of ``skip``-th frame
+    """
+
+    def __init__(self, env: gym.Env, skip: int = 4):
+        gym.Wrapper.__init__(self, env)
+        # most recent raw observations (for max pooling across time steps)
+        self._state_buffer = np.zeros((2,) + env.observation_space.shape, dtype=env.observation_space.dtype)
+        self._skip = skip
+
+    def step(self, action: int):
+        """
+        Step the environment with the given action
+        Repeat action, sum reward, and max over last observations.
+
+        :param action: the action
+        :return: observation, reward, done, information
+        """
+        total_reward = 0.0
+        for i in range(self._skip):
+            # obs, reward, done, info = self.env.step(action)
+            state, reward, terminal, truncated, info = self.env.step(action)
+            if i == self._skip - 2:
+                self._state_buffer[0] = state
+            if i == self._skip - 1:
+                self._state_buffer[1] = state
+            total_reward += reward
+            if terminal or truncated:
+                break
+        max_frame = self._state_buffer.max(axis=0)
+
+        return max_frame, total_reward, terminal, truncated, info

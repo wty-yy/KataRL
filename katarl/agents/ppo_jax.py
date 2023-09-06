@@ -26,19 +26,20 @@ import time
 def get_logs() -> Logs:
     return Logs(
         init_logs={
-            'episode_step': MeanMetric(),
-            'episode_return': MeanMetric(),
+            'terminal_length': MeanMetric(),
+            'terminal_rewards': MeanMetric(),
+            'episode_length': MeanMetric(),
+            'episode_rewards': MeanMetric(),
             'v_value': MeanMetric(),
             'ad_value': MeanMetric(),
             'loss_p': MeanMetric(),
             'loss_v': MeanMetric(),
             'loss_ent': MeanMetric(),
-            # 'advantage': MeanMetric(),
-            'max_reward': 0,
+            'max_terminal_reward': 0,
             'learning_rate': 0,
         },
         folder2name={
-            'charts': ['episode_step', 'episode_return', 'max_reward', 'learning_rate'],
+            'charts': ['terminal_length', 'terminal_rewards', 'episode_length', 'episode_rewards', 'max_terminal_reward', 'learning_rate'],
             'metrics': ['v_value', 'ad_value', 'loss_p', 'loss_v', 'loss_ent']
         }
     )
@@ -76,7 +77,7 @@ class Actor:
 
     def act(self):
         S, A, R, S_, T, AD, V, LP = self.S, self.A, self.R, self.S_, self.T, self.AD, self.V, self.LP
-        terminal_steps, terminal_rewards = [], []
+        terminal_length, terminal_rewards, episode_length, episode_rewards = [], [], [], []
         for i in range(self.row):
             self.key, v, log_proba, action = self.get_action(self.key, self.model.state.params, self.state)
             V[i], LP[i] = v.flatten(), log_proba
@@ -84,8 +85,10 @@ class Actor:
             S[i], A[i], R[i], S_[i], T[i] = \
                 self.state, action, reward, state_, terminal
             self.state = state_
-            terminal_steps += self.env.get_terminal_steps()
+            terminal_length += self.env.get_terminal_length()
             terminal_rewards += self.env.get_terminal_reward()
+            episode_length += self.env.get_episode_length()
+            episode_rewards += self.env.get_episode_reward()
         v_last, _ = self.pred(self.model.state.params, self.state)
         v_last = v_last.reshape(1, self.col)
         # Calc Delta
@@ -99,7 +102,7 @@ class Actor:
             V.reshape(self.args.data_size, 1), \
             LP.reshape(self.args.data_size, 1)
         dataset = (S, A, AD, V, LP)
-        return dataset, terminal_steps, terminal_rewards
+        return dataset, terminal_length, terminal_rewards, episode_length, episode_rewards
 
 class Agent(BaseAgent):
 
@@ -123,15 +126,15 @@ class Agent(BaseAgent):
         self.start_time = time.time()
         for i in tqdm(range(self.args.num_iters)):
             self.logs.reset()
-            steps, rewards = self.fit()
+            terminal_length, terminal_rewards, episode_length, episode_rewards = self.fit()
             self.global_step = (i+1) * self.args.data_size
-            max_reward = None if len(rewards) == 0 else int(np.max(rewards))
+            max_reward = None if len(terminal_rewards) == 0 else np.max(terminal_rewards)
             self.logs.update(
-                ['episode_step', 'episode_return', 'max_reward', 'learning_rate'],
-                [steps, rewards, max_reward, self.model.state.opt_state[1][1]['learning_rate']]
+                ['terminal_length', 'terminal_rewards', 'episode_length', 'episode_rewards', 'max_terminal_reward', 'learning_rate'],
+                [terminal_length, terminal_rewards, episode_length, episode_rewards, max_reward, self.model.state.opt_state[1][1]['learning_rate']]
             )
             self.write_tensorboard()
-            if (i + 1) % 10 == 0:
+            if (i + 1) % 100 == 0:
                 self.model.save_weights()
     
     def evaluate(self):
@@ -148,7 +151,7 @@ class Agent(BaseAgent):
             self.write_tensorboard()
 
     def fit(self):
-        dataset, steps, rewards = self.actor.act()
+        dataset, *info = self.actor.act()
         for _ in range(self.args.epochs):
             idxs = np.random.permutation(self.args.data_size)
             for i in range(0, self.args.data_size, self.args.batch_size):
@@ -158,7 +161,7 @@ class Agent(BaseAgent):
                     ['v_value', 'ad_value', 'loss_p', 'loss_v', 'loss_ent'],
                     [v, ad, loss_p, loss_v, loss_ent]
                 )
-        return steps, rewards
+        return info
     
     @partial(jax.jit, static_argnums=0)
     def train_step(self, state:TrainState, dataset, idxs):
@@ -182,9 +185,9 @@ class Agent(BaseAgent):
             ).mean()
 
             # normalize the logits https://gregorygundersen.com/blog/2020/02/09/log-sum-exp/            
-            log_p = logits - jax.scipy.special.logsumexp(logits, axis=-1, keepdims=True)
-            log_p = log_p.clip(min=jnp.finfo(log_p.dtype).min)
-            loss_entropy = - (log_p * jax.nn.softmax(logits)).sum(-1).mean()
+            # log_p = logits - jax.scipy.special.logsumexp(logits, axis=-1, keepdims=True)
+            # log_p = log_p.clip(min=jnp.finfo(log_p.dtype).min)
+            loss_entropy = - (jax.nn.log_softmax(logits) * jax.nn.softmax(logits)).sum(-1).mean()
         
             loss = - loss_p \
                    + self.args.coef_value * loss_v \

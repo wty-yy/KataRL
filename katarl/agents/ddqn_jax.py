@@ -205,7 +205,7 @@ class Agent(BaseAgent):
             state = state_
             self.logs.update(
                 ['episode_step', 'episode_return'],
-                [self.env.get_terminal_steps(), self.env.get_terminal_reward()]
+                [self.env.get_terminal_length(), self.env.get_terminal_reward()]
             )
             self.logs.writer_tensorboard(self.writer, self.global_step, drops=['q_value', 'loss'])
 
@@ -227,7 +227,7 @@ class Agent(BaseAgent):
             state = state_
             self.logs.update(
                 ['episode_step', 'episode_return'],
-                [self.env.get_terminal_steps(), self.env.get_terminal_reward()]
+                [self.env.get_terminal_length(), self.env.get_terminal_reward()]
             )
             self.logs.writer_tensorboard(self.writer, self.global_step, drops=['q_value', 'loss'])
 
