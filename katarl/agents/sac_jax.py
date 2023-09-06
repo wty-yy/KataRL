@@ -20,16 +20,16 @@ def init_logs() -> Logs:
         init_logs = {
             'episode_step': MeanMetric(),
             'episode_return': MeanMetric(),
-            'q1_loss': MeanMetric(),
+            'q_loss': MeanMetric(),
             'q2_loss': MeanMetric(),
-            'q1_value': MeanMetric(),
+            'q_value': MeanMetric(),
             'q2_value': MeanMetric(),
             'p_loss': MeanMetric(),
             'entropy': MeanMetric(),
         },
         folder2name = {
             'charts': ['episode_step', 'episode_return'],
-            'metrics': ['q1_loss', 'q2_loss', 'q1_value', 'q2_value', 'p_loss', 'entropy']
+            'metrics': ['q_loss', 'q2_loss', 'q_value', 'q2_value', 'p_loss', 'entropy']
         }
     )
 
@@ -135,7 +135,7 @@ class Agent(BaseAgent):
                     batch = self.memory.sample()
 
                     self.model, metrics = self.fit(self.model, *batch)
-                    self.logs.update(['q1_loss', 'q2_loss', 'q1_value', 'q2_value', 'p_loss', 'entropy'], metrics)
+                    self.logs.update(['q_loss', 'q2_loss', 'q_value', 'q2_value', 'p_loss', 'entropy'], metrics)
                     
                 if self.global_step % self.args.target_model_update_frequency < self.args.num_envs:
                     self.model = self.model.replace(
@@ -148,7 +148,7 @@ class Agent(BaseAgent):
                 ['episode_step', 'episode_return'],
                 [self.env.get_terminal_length(), self.env.get_terminal_reward()]
             )
-            self.logs.writer_tensorboard(self.writer, self.global_step, drops=['q_value', 'loss'])
+            self.logs.writer_tensorboard(self.writer, self.global_step, drops=['q_loss','q2_loss','q_value','q2_value','p_loss','entropy'])
 
             if (i+1) % self.args.write_logs_frequency == 0:
                 self.write_tensorboard()

@@ -43,8 +43,8 @@ def get_args_and_writer():
         help="the learning rate of alpha, if '--flag-autotune' is taggled")
     parser.add_argument("--coef-target-entropy", type=float, default=const.coef_target_entropy,
         help="the coefficient of the target entropy")
-    parser.add_argument("--max-grad-clip-norm", type=float, default=const.max_grad_clip_norm,
-        help="the maximum global norm for an update")
+    # parser.add_argument("--max-grad-clip-norm", type=float, default=const.max_grad_clip_norm,
+    #     help="the maximum global norm for an update")
     parser.add_argument("--flag-anneal-lr", type=str2bool, default=const.flag_anneal_lr,
         help="if taggled, the learning rate will be linear annealed")
     parser.add_argument("--EPS", type=float, default=const.EPS,
