@@ -18,8 +18,8 @@ from functools import partial
 def init_logs() -> Logs:
     return Logs(
         init_logs = {
-            'episode_step': MeanMetric(),
-            'episode_return': MeanMetric(),
+            'terminal_length': MeanMetric(),
+            'terminal_rewards': MeanMetric(),
             'q_loss': MeanMetric(),
             'q2_loss': MeanMetric(),
             'q_value': MeanMetric(),
@@ -28,7 +28,7 @@ def init_logs() -> Logs:
             'entropy': MeanMetric(),
         },
         folder2name = {
-            'charts': ['episode_step', 'episode_return'],
+            'charts': ['terminal_length', 'terminal_rewards'],
             'metrics': ['q_loss', 'q2_loss', 'q_value', 'q2_value', 'p_loss', 'entropy']
         }
     )
@@ -145,7 +145,7 @@ class Agent(BaseAgent):
 
             state = state_
             self.logs.update(
-                ['episode_step', 'episode_return'],
+                ['terminal_length', 'terminal_rewards'],
                 [self.env.get_terminal_length(), self.env.get_terminal_reward()]
             )
             self.logs.writer_tensorboard(self.writer, self.global_step, drops=['q_loss','q2_loss','q_value','q2_value','p_loss','entropy'])
@@ -167,11 +167,10 @@ class Agent(BaseAgent):
             self.global_step += self.args.num_envs
             state = state_
             self.logs.update(
-                ['episode_step', 'episode_return'],
+                ['terminal_length', 'terminal_rewards'],
                 [self.env.get_terminal_length(), self.env.get_terminal_reward()]
             )
-            self.logs.writer_tensorboard(self.writer, self.global_step, drops=['q_value', 'loss'])
-
+            self.logs.writer_tensorboard(self.writer, self.global_step, drops=['q_loss','q2_loss','q_value','q2_value','p_loss','entropy'])
             if (i+1) % self.args.write_logs_frequency == 0:
                 self.write_tensorboard()
     
@@ -226,7 +225,7 @@ class Agent(BaseAgent):
         return model, (q1_loss, q2_loss, q1_value, q2_value, p_loss, entropy)
     
     def write_tensorboard(self):
-        self.logs.writer_tensorboard(self.writer, self.global_step, drops=['episode_step', 'episode_return'])
+        self.logs.writer_tensorboard(self.writer, self.global_step, drops=['terminal_length', 'terminal_rewards'])
         self.writer.add_scalar('charts/alpha', np.exp(self.model.log_alpha.params[0]), self.global_step)
         self.writer.add_scalar(
             'charts/SPS_avg',

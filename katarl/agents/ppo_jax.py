@@ -134,8 +134,9 @@ class Agent(BaseAgent):
                 [terminal_length, terminal_rewards, episode_length, episode_rewards, max_reward, self.model.state.opt_state[1][1]['learning_rate']]
             )
             self.write_tensorboard()
-            if (i + 1) % 100 == 0:
-                self.model.save_weights()
+            if (i+1) % (self.args.num_iters // self.args.num_model_save) == 0 or i == self.args.num_iters - 1:
+                print(f"Save weights at global step:", self.global_step)
+                for model in self.models: model.save_weights()
     
     def evaluate(self):
         self.start_time = time.time()

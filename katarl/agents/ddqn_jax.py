@@ -29,13 +29,13 @@ from functools import partial
 def init_logs() -> Logs:
     return Logs(
         init_logs = {
-            'episode_step': MeanMetric(),
-            'episode_return': MeanMetric(),
+            'terminal_length': MeanMetric(),
+            'terminal_rewards': MeanMetric(),
             'q_value': MeanMetric(),
             'loss': MeanMetric(),
         },
         folder2name = {
-            'charts': ['episode_step', 'episode_return'],
+            'charts': ['terminal_length', 'terminal_rewards'],
             'metrics': ['q_value', 'loss']
         }
     )
@@ -204,7 +204,7 @@ class Agent(BaseAgent):
 
             state = state_
             self.logs.update(
-                ['episode_step', 'episode_return'],
+                ['terminal_length', 'terminal_rewards'],
                 [self.env.get_terminal_length(), self.env.get_terminal_reward()]
             )
             self.logs.writer_tensorboard(self.writer, self.global_step, drops=['q_value', 'loss'])
@@ -226,11 +226,10 @@ class Agent(BaseAgent):
             self.global_step += self.args.num_envs
             state = state_
             self.logs.update(
-                ['episode_step', 'episode_return'],
+                ['terminal_length', 'terminal_rewards'],
                 [self.env.get_terminal_length(), self.env.get_terminal_reward()]
             )
             self.logs.writer_tensorboard(self.writer, self.global_step, drops=['q_value', 'loss'])
-
             if (i+1) % self.args.write_logs_frequency == 0:
                 self.write_tensorboard()
     
@@ -269,7 +268,7 @@ class Agent(BaseAgent):
         return state, loss_val, q_value
     
     def write_tensorboard(self):
-        self.logs.writer_tensorboard(self.writer, self.global_step, drops=['episode_step', 'episode_return'])
+        self.logs.writer_tensorboard(self.writer, self.global_step, drops=['terminal_length', 'terminal_rewards'])
         self.writer.add_scalar('charts/epsilon', self.epsilon, self.global_step)
         self.writer.add_scalar(
             'charts/SPS_avg',

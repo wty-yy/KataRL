@@ -16,13 +16,13 @@ from flax.training.train_state import TrainState
 def get_logs() -> Logs:
     return Logs(
         init_logs={
-            'episode_step': MeanMetric(),
-            'episode_return': MeanMetric(),
+            'terminal_length': MeanMetric(),
+            'terminal_rewards': MeanMetric(),
             'v_value': MeanMetric(),
             'loss': MeanMetric(),
         },
         folder2name={
-            'charts': ['episode_step', 'episode_return'],
+            'charts': ['terminal_length', 'terminal_rewards'],
             'metrics': ['v_value', 'loss']
         }
     )
@@ -66,7 +66,7 @@ class Agent(BaseAgent):
                 self.fit(self.target_model_params, self.value_model.state, self.policy_model.state, state, action, reward, state_, terminal)
             state = state_
             self.logs.update(
-                ['episode_step', 'episode_return', 'v_value', 'loss'],
+                ['terminal_length', 'terminal_rewards', 'v_value', 'loss'],
                 [self.env.get_terminal_length(), self.env.get_terminal_reward(), v_value, loss]
             )
             self.logs.writer_tensorboard(self.writer, self.global_step, drops=['v_value', 'loss'])
@@ -75,20 +75,25 @@ class Agent(BaseAgent):
             if (self.global_step + 1) % self.args.write_logs_frequency == 0:
                 self.write_tensorboard()
             if (self.global_step + 1) % (self.args.total_timesteps // self.args.num_model_save) == 0 or self.global_step == self.args.total_timesteps - 1:
+                print(f"Save weights at global step:", self.global_step)
                 self.value_model.save_weights()
                 self.policy_model.save_weights()
     
     def evaluate(self):
-        for episode in tqdm(range(self.episodes)):
+        state = self.env.reset()
+        self.start_time = time.time()
+        for self.global_step in tqdm(range(self.args.total_timesteps)):
             self.logs.reset()
-            state = self.env.reset()
-            for step in range(self.env.max_step):
-                action = self.act(state)
-                state_, _, terminal = self.env.step(action)
-                state = state_
-                if terminal: break
-            self.logs.update(['episode', 'step'], [episode, step])
-            self.write_tensorboard()
+            action = self.act(state)
+            state_, _, terminal = self.env.step(action)
+            state = state_
+            self.logs.update(
+                ['terminal_length', 'terminal_rewards'],
+                [self.env.get_terminal_length(), self.env.get_terminal_reward()]
+            )
+            self.logs.writer_tensorboard(self.writer, self.global_step, drops=['v_value', 'loss'])
+            if (self.global_step + 1) % self.args.write_logs_frequency == 0:
+                self.write_tensorboard()
     
     def policy_model_predict(self, params, x):
         return self.policy_model.state.apply_fn(params, x)
@@ -126,7 +131,7 @@ class Agent(BaseAgent):
         return state_v, state_p, jnp.square(delta), v
     
     def write_tensorboard(self):
-        self.logs.writer_tensorboard(self.writer, self.global_step, drops=['episode_step', 'episode_return'])
+        self.logs.writer_tensorboard(self.writer, self.global_step, drops=['terminal_length', 'terminal_rewards'])
         self.writer.add_scalar('charts/SPS_avg', int(self.global_step / (time.time()-self.start_time)), self.global_step)
         self.writer.add_scalar(
             'charts/learning_rate_v',
