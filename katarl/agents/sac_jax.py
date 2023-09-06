@@ -211,13 +211,13 @@ class Agent(BaseAgent):
         # 2. policy part
         q1 = model.q1.apply_fn(model.q1.params, s)
         q2 = model.q2.apply_fn(model.q2.params, s)
-        def p_loss_fn(params, q_min, alpha):
+        def p_loss_fn(params, q_min, alpha, s):
             logits = model.p.apply_fn(params, s)
             proba = jax.nn.softmax(logits)
             log_p = jax.nn.log_softmax(logits)
             entropy = -(proba * log_p).sum(-1).mean()
             return (proba * (alpha * log_p - q_min)).sum(-1).mean(), entropy
-        (p_loss, entropy), p_grads = jax.value_and_grad(p_loss_fn, has_aux=True)(model.p.params, jnp.minimum(q1, q2), alpha)
+        (p_loss, entropy), p_grads = jax.value_and_grad(p_loss_fn, has_aux=True)(model.p.params, jnp.minimum(q1, q2), alpha, s)
         model = model.replace(p=model.p.apply_gradients(grads=p_grads))
         # 3. autotune alpha
         if self.args.flag_autotune_alpha:
