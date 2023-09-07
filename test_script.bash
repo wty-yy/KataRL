@@ -5,7 +5,6 @@ end=$1
 for i in $(seq 1 $end)
 do
     echo "run time: $i/$end"
-    # python run/dqn/dqn.py --train --wandb-track
     # python katarl/run/dqn/ddqn.py --train --wandb-track --seed $i
     # python katarl/run/dqn/ddqn.py --train --wandb-track --seed $i --env-name Acrobot-v1
     # python katarl/run/a2c/a2c.py --train --wandb-track --seed $i --env-name Acrobot-v1
