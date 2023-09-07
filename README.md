@@ -28,6 +28,10 @@ Tested environment：
     <img src="archives/figures/acrobot_ppo.gif" alt="acrobot ppo" width="200" />
     <img src="archives/figures/breakout_404_onelife_ppo.gif" alt="breakout 404 onelife ppo" width="200" />
 </div>
+Compare different algorithm in ` wandb` [report](https://api.wandb.ai/links/wty-yy/pomv4d9r):
+
+![wandb report](archives/figures/wandb-report-compare-algos.png)
+
 ### Get started
 
 Prerequisites:
@@ -51,11 +55,12 @@ python katarl/run/dqn/ddqn.py --train --seed 2  # set the seed
 python katarl/run/a2c/a2c.py --train --wandb-track --env-name Acrobot-v1  # change the envs
 ```
 
-Compare different algorithm in` wandb` report:
+Check logs with `--wandb-track` in real time:
 
-<iframe src="https://wandb.ai/wty-yy/KataRL/reports/Algorithms-compare--Vmlldzo1MjY2MzIz?accessToken=tk6rtagmfq5mbwyvf242jc1obg04rf2tym8a779nvc5c0l1on0zt48zz90eobwfz" style="border:none;height:1024px;width:100%">
-
-
+<div style="display: flex; flex-wrap: nowrap; justify-content: space-between;">
+    <img src="archives/figures/wandb-ppo-chart.png" alt="cartpole a2c" width="50%" />
+    <img src="archives/figures/wandb-ppo-metrics.png" alt="acrobot ppo" width="50%" />
+</div>
 
 
 ---
