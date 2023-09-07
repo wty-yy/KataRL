@@ -59,8 +59,8 @@ python katarl/run/a2c/a2c.py --train --wandb-track --env-name Acrobot-v1  # chan
 Check logs with `--wandb-track` in real time:
 
 <div style="display: flex; flex-wrap: nowrap; justify-content: space-between;">
-    <img src="archives/figures/wandb-ppo-chart.png" alt="cartpole a2c" width="50%" />
-    <img src="archives/figures/wandb-ppo-metrics.png" alt="acrobot ppo" width="50%" />
+    <img src="archives/figures/wandb-ppo-chart.png" alt="cartpole a2c" width="49%" />
+    <img src="archives/figures/wandb-ppo-metrics.png" alt="acrobot ppo" width="49%" />
 </div>
 ---
 
