@@ -8,6 +8,8 @@ KataRL is a testing framework for reinforcement learning(RL), functions:
 - Use [Weight and Bias(wandb)](https://wandb.ai/) to record and display the training logs.
 - Model weights save and load.
 
+> thanks [cleanrl](https://github.com/vwxyzjn/cleanrl), it provides a clean RL code, and helped me fix many bugs.
+
 ---
 
 Available models:
