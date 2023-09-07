@@ -1,10 +1,10 @@
 # KataRL
 
-## Introduce 介绍
+## Introduce
 
 KataRL is a testing framework for reinforcement learning(RL), functions:
 
-- Easy to train agent interacts with the specified environment (gym), only change the bash command.
+- Easy to train agent interacts with the specified environment (gym), only change the shell command.
 - Use [Weight and Bias(wandb)](https://wandb.ai/) to record and display the training logs.
 - Model weights save and load.
 
@@ -28,7 +28,8 @@ Tested environment：
     <img src="archives/figures/acrobot_ppo.gif" alt="acrobot ppo" width="200" />
     <img src="archives/figures/breakout_404_onelife_ppo.gif" alt="breakout 404 onelife ppo" width="200" />
 </div>
-Compare different algorithm in ` wandb` [report](https://api.wandb.ai/links/wty-yy/pomv4d9r):
+
+Compare different algorithms in `wandb` [report](https://api.wandb.ai/links/wty-yy/pomv4d9r):
 
 ![wandb report](archives/figures/wandb-report-compare-algos.png)
 
@@ -40,7 +41,7 @@ Prerequisites:
 
 Install with `requirements-jax.txt`：
 
-```bash
+```shell
 pip install -r requirements/requirement-jax.txt
 ```
 
@@ -61,63 +62,57 @@ Check logs with `--wandb-track` in real time:
     <img src="archives/figures/wandb-ppo-chart.png" alt="cartpole a2c" width="50%" />
     <img src="archives/figures/wandb-ppo-metrics.png" alt="acrobot ppo" width="50%" />
 </div>
-
-
 ---
 
-The following are old functions:
+## Framework struct
 
-- Periodically display the training status.
-
-  ```shell
-  # plot cyclely (-pc) status from agent_name='DQN-1' (-m) agent_id=0 (-i)
-  python plot.py -m 'DQN-1' -i 0 -pc
-  # plot file will be saved at './logs/figures/{current-timestamp}.png'
-  ```
-
-- Plot the training graph of multi-restarts for the same Agent and Environment. (with 95% confident interval)
-
-  ```shell
-  # logs_path="train-logs/DQN-logs" (-p), model_names=["DQN-1","DQN-2","DQN-6","DQN-16"] (-m)
-  # plot alpha=0.5 (-a), dpi=300 (-dpi)
-  python plot_merge.py -p "train-logs/DQN-logs" -m "DQN-1" "DQN-2" "DQN-6" "DQN-16" -a 0.5 -dpi 300
-  ```
-  
-  ![DQN](archives/figures/DQN-batch-1-2-6-16.png)
-
-## Framework 框架架构
-
-Tree file diagram generation code in shell:
-
-shell中树形文件图生成代码：`tree -f -I "__pycache__|*logs|LICENSE|*.md|*.txt|test*" .`
+Tree file diagram generation code in shell: `tree -f -I "__pycache__|*logs|LICENSE|*.md|*.txt|test*|wandb" . `
 
 ```shell
-RL-framework
-├── ./archives*  "Save some figures"
-├── ./agents  "Agent algorithms package"
-│   ├── ./agents/__init__.py  "Agent class(parent)"
-│   ├── ./agents/DQN.py  "DQN algorithm"
-│   ├── ./agents/constants  "hyper-params package"
-│   │   ├── ./agents/constants/__init__.py  "General hyper-params"
-│   │   └── ./agents/constants/DQN.py  "DQN hyper-params"
-│   └── ./agents/models  "Models package"
-│       └── ./agents/models/__init__.py  "Model class(parent)"
-├── ./envs  "Environment package"
-│   ├── ./envs/__init__.py  "Environment class(parent)"
-│   └── ./envs/gym_env.py  "openai-gymnasium"
-|── ./utils  "General func"
-|	├── ./utils/__init__.py  "Common func"
-|   ├── ./utils/generate_gif.py  "Generate gif from frames"
-|   ├── ./utils/history.py  "History class"
-|   └── ./utils/logs_manager.py  "LogsManager and Logs class"
-|── ./run  "Run algorithm test"
-|	├── ./run/DQN  "DQN"
-│   │   └── ./run/DQN/cartpole.py  "DQN in Cartpole Env"
-|   └── ./run/A2C  "Advantage Actor-Critic"
-│       └── ./run/A2C/cartpole.py  "A2C in Cartpole Env"
-├── ./main.py  "Main test interface, call test function in ./run/model.py"
-├── ./plot.py  "PlotManager class (use argparse to call)"
-├── ./plot_merge.py  "Plot merge logs figure (use argparse to call)"
-└── ./train-logs*  "Algorithm training logs"
+.
+├── ./archives*  "Figures"
+├── ./requirements  "Requirement packages"
+├── ./katarl
+│   ├── ./katarl/agents  "Algorithms"
+│   │   ├── ./katarl/agents/__init__.py
+│   │   ├── ./katarl/agents/a2c_jax.py
+│   │   ├── ./katarl/agents/a2c_tf.py
+│   │   ├── ./katarl/agents/ddqn_jax.py
+│   │   ├── ./katarl/agents/ddqn_tf.py
+│   │   ├── ./katarl/agents/dqn_tf.py
+│   │   ├── ./katarl/agents/ppo_jax.py
+│   │   ├── ./katarl/agents/ppo_tf.py
+│   │   ├── ./katarl/agents/sac_jax.py
+│   │   ├── ./katarl/agents/constants  "Algo hyper-params"
+│   │   │   ├── ./katarl/agents/constants/__init__.py
+│   │   │   ├── ./katarl/agents/constants/a2c.py
+│   │   │   ├── ./katarl/agents/constants/dqn*
+│   │   │   ├── ./katarl/agents/constants/ppo*
+│   │   │   └── ./katarl/agents/constants/sac*
+│   │   └── ./katarl/agents/models  "networks"
+│   │       ├── ./katarl/agents/models/base*
+│   │       ├── ./katarl/agents/models/a2c*
+│   │       ├── ./katarl/agents/models/dqn*
+│   │       ├── ./katarl/agents/models/ppo*
+│   │       └── ./katarl/agents/models/sac*
+│   ├── ./katarl/envs  "Environments"
+│   │   ├── ./katarl/envs/atari_wrappers.py
+│   │   ├── ./katarl/envs/gym_env.py
+│   │   └── ./katarl/envs/__init__.py
+│   ├── ./katarl/run  "Start with shell command"
+│   │   ├── ./katarl/run/a2c
+│   │   │   └── ./katarl/run/a2c/a2c.py
+│   │   ├── ./katarl/run/dqn
+│   │   │   ├── ./katarl/run/dqn/ddqn.py
+│   │   │   └── ./katarl/run/dqn/dqn.py
+│   │   ├── ./katarl/run/ppo
+│   │   │   ├── ./katarl/run/ppo/ppo_atari.py
+│   │   │   └── ./katarl/run/ppo/ppo.py
+│   │   └── ./katarl/run/sac
+│   │       └── ./katarl/run/sac/sac.py
+│   └── ./katarl/utils  "Some util packages"
+│       ├── ./katarl/utils/logs.py
+│       └── ./katarl/utils/parser.py
+└── ./train_script.bash
 ```
 
