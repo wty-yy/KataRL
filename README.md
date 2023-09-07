@@ -24,9 +24,9 @@ Tested environment：
 - `BreakoutNoFrameskip-v4` ([Gymnasium - breakout](https://gymnasium.farama.org/environments/atari/breakout/#breakout)) Following `gif` is generatedd by PPO.
 
 <div style="display: flex; flex-wrap: nowrap; justify-content: space-between;">
-    <img src="archives/figures/cartpole_a2c.gif" alt="cartpole a2c" width="400" />
-    <img src="archives/figures/acrobot_ppo.gif" alt="acrobot ppo" width="200" />
-    <img src="archives/figures/breakout_404_onelife_ppo.gif" alt="breakout 404 onelife ppo" width="200" />
+    <img src="archives/figures/cartpole_a2c.gif" alt="cartpole a2c" width="49%" />
+    <img src="archives/figures/acrobot_ppo.gif" alt="acrobot ppo" width="24%" />
+    <img src="archives/figures/breakout_404_onelife_ppo.gif" alt="breakout 404 onelife ppo" width="24%" />
 </div>
 
 Compare different algorithms in `wandb` [report](https://api.wandb.ai/links/wty-yy/pomv4d9r):
@@ -62,6 +62,7 @@ Check logs with `--wandb-track` in real time:
     <img src="archives/figures/wandb-ppo-chart.png" alt="cartpole a2c" width="49%" />
     <img src="archives/figures/wandb-ppo-metrics.png" alt="acrobot ppo" width="49%" />
 </div>
+
 ---
 
 ## Framework struct
