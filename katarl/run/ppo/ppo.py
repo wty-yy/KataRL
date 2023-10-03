@@ -31,6 +31,7 @@ from importlib import import_module
 
 def get_args_and_writer():
     parser = Parser(algo_name='ppo_jax', env_name='CartPole-v1', model_name='mlp_jax')
+    # parser = Parser(algo_name='ppo_torch', env_name='CartPole-v1', model_name='mlp_torch')
     # hyperparameters
     parser.add_argument("--gamma", type=float, default=const.gamma,
         help="the discount rate of the return")
